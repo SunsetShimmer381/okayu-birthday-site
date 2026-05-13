@@ -4,1627 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>猫羽おかゆ お誕生日</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap');
-  @import url('https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.1.0/style.css');
-
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body {
-    font-family: 'LXGW WenKai', 'Noto Sans JP', sans-serif;
-    background-color: #fff5f8;
-    color: #333;
-    line-height: 1.6;
-    padding-top: 80px;
-  }
-
-  /* ===== 导航栏 ===== */
-  .nav {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #fff;
-    height: clamp(40px, 6vh, 58px);
-    padding: 0 clamp(16px, 4vw, 32px);
-    border-radius: 50px;
-    box-shadow: 0 4px 20px rgba(255, 182, 193, 0.5);
-    z-index: 1000;
-    display: flex;
-    gap: clamp(4px, 1vw, 8px);
-    align-items: center;
-    white-space: nowrap;
-  }
-
-  .nav-item {
-    font-size: clamp(11px, 2vw, 16px);
-    color: #aaa;
-    cursor: pointer;
-    padding: clamp(4px, 1vh, 6px) clamp(8px, 2vw, 12px);
-    border-radius: 20px;
-    transition: all 0.3s;
-  }
-
-  .nav-item:hover {
-    color: #e91e8c;
-    background-color: rgba(255, 183, 197, 0.2);
-  }
-
-  .nav-item.active {
-    color: #e91e8c;
-    font-weight: 500;
-    background-color: rgba(255, 183, 197, 0.15);
-  }
-
-  .nav-separator {
-    color: #ddd;
-    font-size: clamp(10px, 1.5vw, 12px);
-  }
-
-  /* ===== 全屏板块 ===== */
-  .page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 100px 24px;
-  }
-
-  .page-inner {
-    max-width: 1360px;
-    width: 100%;
-  }
-
-  /* ===== Page1 - 介绍页 ===== */
-  .page1-content {
-    display: flex;
-    gap: clamp(40px, 8vw, 80px);
-    align-items: center;
-  }
-
-  .page1-left {
-    flex: 1;
-  }
-
-  .page1-right {
-    flex: 1;
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .birthday-text {
-    font-size: 22px;
-    color: #a08090;
-    margin-bottom: 8px;
-  }
-
-  .date-text {
-    font-size: clamp(100px, 15vw, 160px);
-    font-weight: 900;
-    color: #d4708a;
-    line-height: 1;
-    margin-bottom: 16px;
-  }
-
-  .name-container {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 24px;
-  }
-
-  .name-line-1 {
-    font-size: clamp(40px, 10vw, 110px);
-    font-weight: 700;
-    color: #333;
-    line-height: 1.2;
-  }
-
-  .name-line-2 {
-    font-size: clamp(36px, 9vw, 110px);
-    font-weight: 700;
-    color: #333;
-    line-height: 1.2;
-    display: block;
-  }
-
-  .name-line-2 p {
-    position: relative;
-    display: inline-block;
-    margin: 0;
-    font-size: inherit;
-  }
-
-  .name-line-2 p::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    width: 100%;
-    bottom: 0;
-    height: 30px;
-    background-color: #ffb7c5;
-    z-index: -1;
-    opacity: 0.7;
-  }
-
-  .romaji-text {
-    font-size: clamp(14px, 3vw, 36.5px);
-    color: #999;
-    margin-bottom: 28px;
-  }
-
-  .profile-text {
-    font-size: clamp(15px, 2.2vw, 18px);
-    color: #666;
-    line-height: 1.8;
-  }
-
-  /* ===== 倒计时 ===== */
-  .countdown {
-    margin-top: 28px;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    max-width: 400px;
-  }
-
-  .cd-cell {
-    position: relative;
-    padding: 14px 8px 10px;
-    background: rgba(255,255,255,0.6);
-    border: 1px solid rgba(43,38,48,0.08);
-    border-radius: 10px;
-    text-align: center;
-    backdrop-filter: blur(4px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 70px;
-  }
-
-  .cd-cell .num {
-    font-size: clamp(22px, 3vw, 32px);
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    color: #d4708a;
-    line-height: 1;
-    letter-spacing: -0.01em;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: clip;
-    white-space: nowrap;
-    display: block;
-    width: 100%;
-  }
-
-  .cd-cell .lbl {
-    margin-top: 6px;
-    font-size: 9px;
-    letter-spacing: 0.15em;
-    color: #999;
-    display: block;
-    width: 100%;
-  }
-
-  .cd-caption {
-    margin-bottom: 10px;
-    font-size: 12px;
-    color: #999;
-    letter-spacing: 0.08em;
-  }
-
-  .cd-caption .date {
-    color: #d4708a;
-    font-weight: 600;
-    margin: 0 4px;
-  }
-
-  /* ===== 拍立得相纸卡片 ===== */
-  :root {
-    --accent: #d4708a;
-    --accent-2: #c06078;
-    --accent-3: #e89bb3;
-    --ink-soft: #666;
-    --sakura-deep: #d4708a;
-    --font-display: 'Noto Sans JP', sans-serif;
-  }
-
-  .portrait-card {
-    position: relative;
-    background: #fffaf3;
-    border-radius: 18px;
-    padding: 14px 14px 0;
-    display: flex;
-    flex-direction: column;
-    transform: rotate(var(--tilt, -2deg));
-    box-shadow:
-      0 1px 0 rgba(255,255,255,0.9) inset,
-      0 0 0 1px rgba(43,38,48,0.05),
-      0 22px 40px -20px rgba(90,40,80,0.28),
-      0 60px 80px -40px rgba(90,40,80,0.18);
-    width: clamp(220px, 35vw, 380px);
-  }
-
-  .portrait-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background-image:
-      radial-gradient(circle at 20% 30%, rgba(232,155,179,0.06), transparent 60%),
-      radial-gradient(circle at 80% 80%, rgba(159,195,228,0.05), transparent 55%);
-    pointer-events: none;
-  }
-
-  /* 斜贴胶带 */
-  .portrait-tape {
-    position: absolute;
-    top: -10px;
-    left: 18%;
-    width: 120px;
-    height: 26px;
-    background:
-      repeating-linear-gradient(135deg,
-        rgba(255,255,255,0.35) 0 4px,
-        transparent 4px 8px),
-      linear-gradient(180deg, rgba(245,198,214,0.75), rgba(245,198,214,0.55));
-    transform: rotate(-10deg);
-    box-shadow: 0 4px 10px rgba(90,40,80,0.08);
-    border-radius: 1px;
-    z-index: 2;
-  }
-
-  .portrait-tape::before,
-  .portrait-tape::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 6px;
-    background: inherit;
-    mix-blend-mode: normal;
-  }
-
-  .portrait-tape::before {
-    left: -2px;
-    clip-path: polygon(100% 0, 0 25%, 100% 50%, 0 75%, 100% 100%);
-  }
-
-  .portrait-tape::after {
-    right: -2px;
-    clip-path: polygon(0 0, 100% 25%, 0 50%, 100% 75%, 0 100%);
-  }
-
-  /* 照片区 */
-  .portrait-photo-wrap {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1/1;
-    border-radius: 10px;
-    overflow: hidden;
-    background-color: #ffffff;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
-    cursor: pointer;
-    transition: transform 0.3s ease;
-  }
-
-  .portrait-photo-wrap:hover {
-    transform: scale(1.02);
-  }
-
-  .portrait-photo {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center 20%;
-    transition: opacity 1s ease-in-out;
-  }
-
-  .portrait-photo.photo-next {
-    opacity: 0;
-  }
-
-  .portrait-key {
-    position: absolute;
-    right: 10px;
-    bottom: 10px;
-    font-size: 18px;
-    color: rgba(255,255,255,0.92);
-    text-shadow: 0 2px 6px rgba(90,40,80,0.35);
-    pointer-events: none;
-    line-height: 1;
-  }
-
-  .click-hint {
-    position: absolute;
-    bottom: 8px;
-    left: 10px;
-    font-size: 11px;
-    color: rgba(255,255,255,0.8);
-    text-shadow: 0 1px 3px rgba(90,40,80,0.4);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .portrait-photo-wrap:hover .click-hint {
-    opacity: 1;
-  }
-
-  /* 拍立得底部签名区 */
-  .portrait-caption {
-    height: 66px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 0 6px;
-    font-family: var(--font-display);
-    font-size: clamp(13px, 2vw, 15px);
-    color: var(--ink-soft);
-    letter-spacing: 0.04em;
-  }
-
-  .portrait-caption .sep {
-    color: var(--sakura-deep);
-  }
-
-  .portrait-caption .years {
-    font-feature-settings: "tnum";
-    letter-spacing: 0.08em;
-  }
-
-  /* ===== 滚动提示 ===== */
-  .scroll-hint {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    opacity: 0.6;
-    visibility: visible;
-    transition: opacity 0.5s ease, visibility 0.5s ease;
-    animation: scrollHintBounce 2s ease-in-out infinite;
-    z-index: 100;
-  }
-
-  .scroll-hint.hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-  .scroll-hint-text {
-    font-size: clamp(11px, 1.5vw, 13px);
-    color: #a08090;
-    letter-spacing: 0.15em;
-    text-transform: lowercase;
-  }
-
-  .scroll-hint-arrow {
-    width: 16px;
-    height: 16px;
-    border-right: 2px solid #a08090;
-    border-bottom: 2px solid #a08090;
-    transform: rotate(45deg);
-    animation: scrollHintArrow 1.5s ease-in-out infinite;
-  }
-
-  @keyframes scrollHintBounce {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(6px); }
-  }
-
-  /* ===== Page2 - 详情页 ===== */
-  .page-title {
-    font-size: clamp(24px, 3.5vw, 32px);
-    font-weight: 700;
-    text-align: center;
-    color: #a08090;
-    margin-bottom: 48px;
-  }
-
-  .profile-container {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    gap: 24px;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-
-  .profile-left-column {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  .profile-left-column > .profile-card,
-  .profile-left-column > .feature-card {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  @media (max-width: 768px) {
-    .profile-container {
-      grid-template-columns: 1fr;
-      gap: 18px;
-    }
-
-    .profile-left-column {
-      gap: 16px;
-    }
-  }
-
-  .profile-card {
-    background: #fffdf5;
-    border-radius: 20px;
-    box-shadow: 
-      0 2px 8px rgba(212, 112, 138, 0.08),
-      0 8px 24px rgba(212, 112, 138, 0.06);
-    overflow: hidden;
-    border: 1px solid rgba(240, 200, 210, 0.5);
-  }
-
-  .profile-card-header {
-    padding: 28px 20px 14px;
-    background: linear-gradient(160deg, #fef0f3 0%, #fce4ec 100%);
-    border-bottom: 1px dashed rgba(212, 112, 138, 0.2);
-  }
-
-  .profile-card-header h3 {
-    font-size: 14px;
-    font-weight: 600;
-    color: #c08090;
-    margin: 0;
-    letter-spacing: 0.05em;
-  }
-
-  .profile-info {
-    padding: 8px 0 16px;
-  }
-
-  .info-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 18px;
-    border-bottom: 1px solid rgba(240, 220, 225, 0.4);
-  }
-
-  .info-row:last-child {
-    border-bottom: none;
-  }
-
-  .info-label {
-    font-size: 13px;
-    color: #b09090;
-    font-weight: 500;
-  }
-
-  .info-value {
-    font-size: 13px;
-    color: #d4708a;
-    text-align: right;
-    font-weight: 500;
-  }
-
-  .profile-right-section {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  .top-cards-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-  }
-
-  .mini-card {
-    background: #fffdf5;
-    border-radius: 16px;
-    box-shadow: 
-      0 2px 6px rgba(212, 112, 138, 0.06),
-      0 6px 16px rgba(212, 112, 138, 0.04);
-    overflow: hidden;
-    border: 1px solid rgba(240, 200, 210, 0.4);
-    position: relative;
-  }
-
-  .mini-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 40px;
-    height: 40px;
-    background: radial-gradient(circle at top right, rgba(252, 228, 236, 0.6), transparent 70%);
-    pointer-events: none;
-  }
-
-  .mini-card-header {
-    padding: 12px 16px 10px;
-    background: linear-gradient(135deg, #fef0f3 0%, #fce4ec 60%, #fff 100%);
-    border-bottom: 1px solid rgba(240, 200, 210, 0.3);
-  }
-
-  .mini-card-header h4 {
-    font-size: 12px;
-    font-weight: 600;
-    color: #c08090;
-    margin: 0;
-    letter-spacing: 0.08em;
-  }
-
-  .mini-card-content {
-    padding: 14px 16px;
-  }
-
-  .mini-card-content p {
-    margin: 0;
-    font-size: 13px;
-    color: #888;
-    line-height: 1.6;
-  }
-
-  .nickname-text {
-    font-size: 15px;
-    font-weight: 600;
-    color: #d4708a;
-    line-height: 1.8;
-    margin: 0;
-    text-shadow: 0 0 8px rgba(212, 112, 138, 0.25);
-  }
-
-  .nickname-text span:nth-child(odd) {
-    color: #d4708a;
-  }
-
-  .nickname-text span:nth-child(even) {
-    color: #c8a0b0;
-    margin: 0 4px;
-  }
-
-  .food-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .food-item {
-    padding: 8px 10px;
-    background: rgba(255, 255, 255, 0.6);
-    border-radius: 10px;
-    border: 1px solid rgba(240, 200, 210, 0.3);
-  }
-
-  .food-label {
-    display: inline-block;
-    padding: 1px 6px;
-    background: #f8b4c4;
-    border-radius: 8px;
-    font-size: 9px;
-    color: #fff;
-    margin-bottom: 4px;
-  }
-
-  .food-item p {
-    margin: 0;
-    font-size: 12px;
-    color: #777;
-  }
-
-  .feature-card {
-    background: #fffdf5;
-    border-radius: 20px;
-    box-shadow: 
-      0 2px 8px rgba(212, 112, 138, 0.08),
-      0 8px 24px rgba(212, 112, 138, 0.06);
-    overflow: hidden;
-    border: 1px solid rgba(240, 200, 210, 0.5);
-  }
-
-  .feature-card-header {
-    padding: 28px 20px 14px;
-    background: linear-gradient(160deg, #fef0f3 0%, #fce4ec 100%);
-    border-bottom: 1px dashed rgba(212, 112, 138, 0.2);
-  }
-
-  .feature-card-header h3 {
-    font-size: 14px;
-    font-weight: 600;
-    color: #c08090;
-    margin: 0;
-    letter-spacing: 0.05em;
-  }
-
-  .feature-card-content {
-    padding: 16px 20px 20px;
-  }
-
-  .feature-card-content p {
-    margin: 0 0 14px 0;
-    font-size: 13px;
-    color: #777;
-    line-height: 1.7;
-  }
-
-  .feature-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .tag {
-    padding: 3px 10px;
-    background: rgba(252, 228, 236, 0.7);
-    border-radius: 16px;
-    font-size: 11px;
-    color: #d4708a;
-    border: 1px solid rgba(240, 180, 200, 0.3);
-  }
-
-  .phrase-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px 22px;
-  }
-
-  .phrase-item {
-    padding: 8px 0;
-    border-bottom: 1px dashed rgba(43,38,48,0.08);
-  }
-
-  .phrase-item:last-child {
-    border-bottom: 0;
-  }
-
-  .phrase-main {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    margin-bottom: 2px;
-    flex-wrap: wrap;
-  }
-
-  .phrase-jp {
-    font-size: 13px;
-    color: #d4708a;
-    letter-spacing: 0.02em;
-  }
-
-  .phrase-sep {
-    color: #c8a0b0;
-    font-size: 11px;
-  }
-
-  .phrase-cn {
-    font-size: 12px;
-    color: #666;
-  }
-
-  .phrase-usage {
-    display: block;
-    font-size: 11px;
-    color: #aaa;
-    line-height: 1.6;
-  }
-
-  .phrase-jp .placeholder-text {
-    color: #d4708a;
-  }
-
-  .phrase-cn .placeholder-text {
-    color: #666;
-  }
-
-  .phrase-usage .placeholder-text {
-    color: #aaa;
-  }
-
-  .preference-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-
-  .preference-item {
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 12px;
-    border: 1px solid #f0e0e6;
-  }
-
-  .pref-label {
-    display: inline-block;
-    padding: 2px 8px;
-    background: #f8b4c4;
-    border-radius: 10px;
-    font-size: 11px;
-    color: #fff;
-    margin-bottom: 8px;
-  }
-
-  .preference-item p {
-    margin: 0;
-    font-size: 13px;
-    color: #666;
-    line-height: 1.5;
-  }
-
-  .song-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .song-item {
-    padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 8px;
-    border: 1px solid #f0e0e6;
-  }
-
-  .song-title {
-    font-size: 14px;
-    color: #666;
-  }
-
-  .sns-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .sns-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 8px;
-    border: 1px solid #f0e0e6;
-  }
-
-  .sns-name {
-    font-size: 13px;
-    color: #a08090;
-    font-weight: 500;
-  }
-
-  .sns-link {
-    font-size: 13px;
-    color: #d4708a;
-  }
-
-  .placeholder-text {
-    color: #d4708a;
-    font-style: normal;
-  }
-
-  /* 响应式布局 */
-  @media (max-width: 950px) {
-    .profile-container {
-      grid-template-columns: 1fr;
-      gap: 18px;
-    }
-
-    .profile-left-column {
-      gap: 16px;
-    }
-
-    .top-cards-row {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-
-    .preference-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .phrase-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* ===== Page3 - 时间线 ===== */
-  .timeline-wrapper {
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .timeline {
-    position: relative;
-    padding-left: 40px;
-  }
-
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background-color: #f8bbd0;
-  }
-
-  .timeline-item {
-    position: relative;
-    margin-bottom: 40px;
-  }
-
-  .timeline-dot {
-    position: absolute;
-    left: -40px;
-    top: 4px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background-color: #f8bbd0;
-    border: 3px solid #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  .timeline-item.highlight .timeline-dot {
-    background-color: #c2185b;
-    width: 20px;
-    height: 20px;
-    left: -42px;
-  }
-
-  .timeline-date {
-    font-size: 13px;
-    color: #a08090;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-
-  .timeline-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 4px;
-  }
-
-  .timeline-desc {
-    font-size: 14px;
-    color: #666;
-  }
-
-  /* ===== Page4 - 精选切片 ===== */
-  .video-section {
-    margin-bottom: 40px;
-  }
-
-  .video-section:last-child {
-    margin-bottom: 0;
-  }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 2px dashed rgba(212, 112, 138, 0.3);
-  }
-
-  .section-dot {
-    width: 12px;
-    height: 12px;
-    background: linear-gradient(135deg, #f8b4c4 0%, #f098b0 100%);
-    border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(212, 112, 138, 0.4);
-  }
-
-  .section-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: #d4708a;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(212, 112, 138, 0.3) 0%, transparent 100%);
-    margin-left: 10px;
-  }
-
-  .section-desc {
-    font-size: 13px;
-    color: #999;
-    margin: 0;
-    margin-left: auto;
-  }
-
-  .videos-wrapper {
-    max-width: 900px;
-    margin: 0 auto;
-  }
-
-  .video-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-  }
-
-  @media (max-width: 768px) {
-    .video-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-    }
-
-    .section-header {
-      flex-wrap: wrap;
-    }
-
-    .section-title::after {
-      display: none;
-    }
-
-    .section-desc {
-      margin-left: 0;
-      width: 100%;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .video-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .video-card {
-    background: #fff;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 2px 12px rgba(212, 112, 138, 0.08);
-    border: 1px solid rgba(240, 200, 210, 0.4);
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  .video-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(212, 112, 138, 0.15);
-  }
-
-  .video-thumbnail {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%;
-    background: linear-gradient(135deg, #fef0f3 0%, #fce4ec 100%);
-    overflow: hidden;
-  }
-
-  .video-cover {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .video-duration {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    padding: 3px 8px;
-    background: rgba(0, 0, 0, 0.7);
-    border-radius: 4px;
-    font-size: 11px;
-    color: #fff;
-    font-family: monospace;
-  }
-
-  .video-info {
-    padding: 14px;
-  }
-
-  .video-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #333;
-    margin: 0 0 6px 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .video-desc {
-    font-size: 12px;
-    color: #999;
-    margin: 0;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-clamp: 2;
-    box-orient: vertical;
-    overflow: hidden;
-  }
-
-  /* ===== 视频播放器悬浮窗口 ===== */
-  .video-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(43, 38, 48, 0.85);
-    backdrop-filter: blur(8px);
-    z-index: 2000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-  }
-
-  .video-modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .video-modal {
-    width: 90%;
-    max-width: 960px;
-    background: linear-gradient(145deg, #fffdf5 0%, #fff5f8 100%);
-    border-radius: 24px;
-    overflow: hidden;
-    box-shadow: 
-      0 20px 60px rgba(43, 38, 48, 0.4),
-      0 0 0 1px rgba(255, 255, 255, 0.1);
-    transform: scale(0.9);
-    transition: transform 0.3s ease;
-  }
-
-  .video-modal-overlay.active .video-modal {
-    transform: scale(1);
-  }
-
-  .video-modal-close {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(0, 0, 0, 0.6);
-    color: #fff;
-    font-size: 20px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    z-index: 10;
-  }
-
-  .video-modal-close:hover {
-    background: #d4708a;
-    color: #fff;
-    transform: rotate(90deg);
-  }
-
-  .video-modal-content {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%;
-    background: #000;
-  }
-
-  .video-modal-player {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-  }
-
-  .video-modal-info {
-    padding: 20px 24px;
-  }
-
-  .video-modal-desc {
-    font-size: 14px;
-    color: #666;
-    line-height: 1.6;
-    margin: 0;
-  }
-
-  /* ===== 小说页面样式 ===== */
-  .novel-container {
-    display: flex;
-    gap: 30px;
-    margin-top: 40px;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .novel-column {
-    flex: 1;
-    background: linear-gradient(145deg, #fffdf5 0%, #fff5f8 100%);
-    border-radius: 20px;
-    box-shadow: 
-      0 10px 40px rgba(43, 38, 48, 0.1),
-      0 0 0 1px rgba(212, 112, 138, 0.1);
-    overflow: hidden;
-  }
-
-  .novel-header {
-    padding: 20px 24px;
-    background: linear-gradient(160deg, #fef0f3 0%, #fce4ec 100%);
-    border-bottom: 1px dashed rgba(212, 112, 138, 0.2);
-    text-align: center;
-  }
-
-  .novel-lang {
-    font-size: 16px;
-    font-weight: 600;
-    color: #d4708a;
-    letter-spacing: 2px;
-  }
-
-  .novel-content {
-    padding: 30px;
-    max-height: 500px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #d4708a rgba(212, 112, 138, 0.1);
-  }
-
-  .novel-content::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .novel-content::-webkit-scrollbar-track {
-    background: rgba(212, 112, 138, 0.1);
-    border-radius: 3px;
-  }
-
-  .novel-content::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #d4708a 0%, #c45a74 100%);
-    border-radius: 3px;
-  }
-
-  .novel-content p {
-    font-size: 15px;
-    line-height: 2;
-    color: #3d3840;
-    margin-bottom: 20px;
-    text-indent: 2em;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    padding: 8px 12px;
-    border-radius: 8px;
-  }
-
-  .novel-content p:last-child {
-    margin-bottom: 0;
-  }
-
-  .novel-paragraph {
-    cursor: pointer;
-  }
-
-  .novel-paragraph.highlighted {
-    background-color: rgba(212, 112, 138, 0.2);
-    color: #d4708a;
-  }
-
-  .novel-paragraph.empty {
-    height: 20px;
-    padding: 0;
-    margin-bottom: 8px;
-    cursor: default;
-    text-indent: 0;
-  }
-
-  .loading-text {
-    text-align: center;
-    color: #999;
-    font-style: italic;
-  }
-
-  .empty-text {
-    text-align: center;
-    color: #d4708a;
-    font-style: italic;
-    text-indent: 0 !important;
-  }
-
-  .novel-divider {
-    width: 2px;
-    background: linear-gradient(180deg, transparent 0%, rgba(212, 112, 138, 0.3) 20%, rgba(212, 112, 138, 0.3) 80%, transparent 100%);
-  }
-
-  @media (max-width: 900px) {
-    .novel-container {
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .novel-divider {
-      height: 2px;
-      width: 100%;
-      background: linear-gradient(90deg, transparent 0%, rgba(212, 112, 138, 0.3) 20%, rgba(212, 112, 138, 0.3) 80%, transparent 100%);
-    }
-
-    .novel-content {
-      max-height: 300px;
-      padding: 20px;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .video-modal {
-      width: 95%;
-      border-radius: 16px;
-    }
-
-    .video-modal-header {
-      padding: 16px 20px;
-    }
-
-    .video-modal-title {
-      font-size: 14px;
-    }
-
-    .video-modal-info {
-      padding: 16px 20px;
-    }
-  }
-
-  /* ===== 粉丝留言 ===== */
-  .messages-wrapper {
-    max-width: 800px;
-    margin: 0 auto;
-    width: 100%;
-    height: 60vh;
-    max-height: 600px;
-    background: linear-gradient(145deg, #fffdf5 0%, #fff5f8 100%);
-    border-radius: 24px;
-    box-shadow: 
-      0 4px 20px rgba(212, 112, 138, 0.12),
-      0 12px 40px rgba(212, 112, 138, 0.08);
-    border: 1px solid rgba(240, 200, 210, 0.6);
-    overflow: hidden;
-    position: relative;
-  }
-
-  .messages-header {
-    padding: 20px 24px;
-    background: linear-gradient(160deg, #fef0f3 0%, #fce4ec 100%);
-    border-bottom: 1px dashed rgba(212, 112, 138, 0.2);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .messages-header-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #f8b4c4 0%, #e89bb3 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 14px;
-    box-shadow: 0 2px 8px rgba(212, 112, 138, 0.2);
-  }
-
-  .messages-header-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #d4708a;
-    margin: 0;
-  }
-
-  .messages-header-count {
-    margin-left: auto;
-    font-size: 12px;
-    color: #aaa;
-    background: rgba(255, 255, 255, 0.8);
-    padding: 4px 10px;
-    border-radius: 12px;
-  }
-
-  .messages-container {
-    padding: 16px;
-    height: calc(100% - 72px);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  /* 自定义滚动条 */
-  .messages-container::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .messages-container::-webkit-scrollbar-track {
-    background: rgba(248, 180, 196, 0.1);
-    border-radius: 3px;
-  }
-
-  .messages-container::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #f8b4c4 0%, #e89bb3 100%);
-    border-radius: 3px;
-  }
-
-  .messages-container::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #e89bb3 0%, #d4708a 100%);
-  }
-
-  .message-card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 16px 20px;
-    box-shadow: 
-      0 2px 6px rgba(212, 112, 138, 0.06),
-      0 6px 16px rgba(212, 112, 138, 0.04);
-    border: 1px solid rgba(240, 200, 210, 0.4);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    animation: fadeInUp 0.5s ease forwards;
-    opacity: 0;
-  }
-
-  .message-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 
-      0 4px 12px rgba(212, 112, 138, 0.12),
-      0 12px 32px rgba(212, 112, 138, 0.08);
-  }
-
-  .message-header-inner {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-
-  .message-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #f8b4c4 0%, #e89bb3 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 16px;
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(212, 112, 138, 0.25);
-  }
-
-  .message-sender {
-    font-size: 14px;
-    font-weight: 600;
-    color: #d4708a;
-    margin: 0;
-  }
-
-  .message-text {
-    font-size: 15px;
-    color: #555;
-    line-height: 1.7;
-    margin: 0;
-    padding-left: 52px;
-    word-break: break-word;
-  }
-
-  .message-time {
-    font-size: 11px;
-    color: #aaa;
-    margin-top: 8px;
-    padding-left: 52px;
-  }
-
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* ===== 弹幕留言板 ===== */
-  .danmaku-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60vh;
-    pointer-events: none;
-    z-index: 500;
-    overflow: hidden;
-  }
-
-  .danmaku-item {
-    position: absolute;
-    white-space: nowrap;
-    font-size: 14px;
-    background-color: rgba(255, 255, 255, 0.75);
-    padding: 6px 14px;
-    border-radius: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    animation: danmaku-scroll 12s linear forwards;
-  }
-
-  .danmaku-item .danmaku-name {
-    color: #9c7a6b;
-    font-weight: 400;
-    margin-right: 6px;
-  }
-
-  .danmaku-item .danmaku-text {
-    color: #555;
-  }
-
-  @keyframes danmaku-scroll {
-    from {
-      transform: translateX(100vw);
-    }
-    to {
-      transform: translateX(-100%);
-    }
-  }
-
-  /* ===== 控制按钮 ===== */
-  .control-buttons {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    z-index: 999;
-  }
-
-  .control-btn {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    border: none;
-    background-color: rgba(255, 255, 255, 0.9);
-    cursor: pointer;
-    box-shadow: 0 2px 12px rgba(255, 183, 197, 0.4);
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: visible;
-  }
-
-  .control-btn:hover {
-    background-color: #fff;
-    box-shadow: 0 4px 16px rgba(255, 183, 197, 0.6);
-    transform: scale(1.05);
-  }
-
-  .control-btn.off {
-    background-color: rgba(200, 200, 200, 0.7);
-    color: #999;
-  }
-
-  .control-btn.off:hover {
-    background-color: rgba(210, 210, 210, 0.8);
-  }
-
-  .control-btn.on {
-    background-color: #d4708a;
-    color: #fff;
-  }
-
-  .control-btn.on:hover {
-    background-color: #c06078;
-  }
-
-  .btn-text {
-    font-size: 18px;
-    font-weight: 500;
-    line-height: 1;
-    position: relative;
-    z-index: 1;
-  }
-
-  .strike-line {
-    position: absolute;
-    width: 70%;
-    height: 2px;
-    background-color: currentColor;
-    transform: rotate(-45deg);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .control-btn.off .strike-line {
-    opacity: 1;
-  }
-
-  .btn-badge {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    background-color: #d4708a;
-    color: #fff;
-    font-size: 9px;
-    font-weight: 700;
-    padding: 2px 5px;
-    border-radius: 10px;
-    min-width: 18px;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 0.3s;
-    z-index: 2;
-  }
-
-  .control-btn.on .btn-badge {
-    opacity: 1;
-  }
-
-  /* ===== 响应式 ===== */
-  @media (max-width: 950px) {
-    .page1-content {
-      flex-direction: column;
-      gap: 40px;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .nav {
-      padding: 8px 16px;
-      gap: 4px;
-    }
-
-    .nav-item {
-      font-size: 11px;
-      padding: 4px 6px;
-    }
-
-    .nav-separator {
-      font-size: 10px;
-    }
-
-    .date-text {
-      font-size: 70px;
-    }
-
-    .name-line-1 {
-      font-size: clamp(24px, 6vw, 36px);
-    }
-
-    .name-line-2 {
-      font-size: clamp(20px, 5vw, 32px);
-    }
-  }
-</style>
+  <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
 
@@ -1646,8 +26,9 @@
 
 <!-- 背景音乐（默认关闭） -->
 <audio id="bgMusic" loop>
-  <source src="" type="audio/mpeg">
-</audio>
+  <source src="./assets/audio/background_music.mp3" type="audio/mpeg">
+  <source src="./assets/audio/background_music.ogg" type="audio/ogg">
+</audio></audio>
 
 <!-- 视频播放器悬浮窗口 -->
 <div class="video-modal-overlay" id="videoModalOverlay" onclick="closeVideoModal(event)">
@@ -1674,7 +55,9 @@
   <span class="nav-separator">·</span>
   <span class="nav-item" data-page="5">メッセージ</span>
   <span class="nav-separator">·</span>
-  <span class="nav-item" data-page="6">小説</span>
+  <span class="nav-item" data-page="6">特殊贈り物</span>
+  <span class="nav-separator">·</span>
+  <span class="nav-item" data-page="7">謝辞</span>
 </nav>
 
 <!-- Page1 - 介绍页 -->
@@ -1713,8 +96,8 @@
         <div class="portrait-card" style="--tilt: -2deg;">
           <div class="portrait-tape"></div>
           <div class="portrait-photo-wrap" onclick="nextImage()">
-            <img src="./image/mainPicture1.jpg" alt="猫羽おかゆ" class="portrait-photo" id="mainPhoto">
-            <img src="./image/mainPicture1.jpg" alt="猫羽おかゆ" class="portrait-photo photo-next" id="photoNext">
+            <img src="./assets/images/mainPicture1.webp" alt="猫羽おかゆ" class="portrait-photo" id="mainPhoto">
+            <img src="./assets/images/mainPicture1.webp" alt="猫羽おかゆ" class="portrait-photo photo-next" id="photoNext">
             <span class="portrait-key">✦</span>
             <span class="click-hint">点击切换</span>
           </div>
@@ -1853,11 +236,11 @@
               </div>
               <div class="phrase-item">
                 <div class="phrase-main">
-                  <span class="phrase-jp"><span class="placeholder-text">口癖3</span></span>
+                  <span class="phrase-jp"><span class="placeholder-text">ブロニーさん、大好き！</span></span>
                   <span class="phrase-sep">·</span>
-                  <span class="phrase-cn"><span class="placeholder-text">中文</span></span>
+                  <span class="phrase-cn"><span class="placeholder-text">最喜欢brony桑啦！</span></span>
                 </div>
-                <span class="phrase-usage"><span class="placeholder-text">意味/使い方</span></span>
+                <span class="phrase-usage"><span class="placeholder-text">作为猫羽おかゆ的第一个提督sama，当然是最喜欢啦！</span></span>
               </div>
               <div class="phrase-item">
                 <div class="phrase-main">
@@ -1881,35 +264,71 @@
     <h2 class="page-title">猫羽おかゆの軌跡</h2>
     <div class="timeline-wrapper">
       <div class="timeline">
-        <div class="timeline-item">
+        <div class="timeline-item" data-image="./assets/images/31b24de24429c6b861a6ca2d45321989.webp">
           <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_1.webp" alt="初次相遇" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
           <p class="timeline-date">2026.4.18</p>
           <p class="timeline-title">初次相遇</p>
           <p class="timeline-desc">猫羽おかゆ在B站发布自我介绍视频</p>
         </div>
-        <div class="timeline-item">
+        <div class="timeline-item" data-image="./assets/images/c9538a405d6edba31a40ec2a21b394ba.webp">
           <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_2.webp" alt="涨粉潮" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
           <p class="timeline-date">2026.4.19</p>
           <p class="timeline-title">涨粉潮</p>
           <p class="timeline-desc">在未开启直播，仅仅只有一个自我介绍的视频的情况下，猫羽おかゆ的粉丝数量迅速破万</p>
         </div>
-        <div class="timeline-item">
+        <div class="timeline-item highlight" data-image="./assets/images/4ef7e175d0173f436c187d2b0ee21949.webp">
           <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_3.webp" alt="初配信" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
           <p class="timeline-date">2026.4.24</p>
           <p class="timeline-title">初配信</p>
           <p class="timeline-desc">虽然第一次直播事故连连（电脑君疑似燃尽了），但是大家热情仿佛很高，直播间人气一度登顶第一</p>
         </div>
-        <div class="timeline-item">
+        <div class="timeline-item" data-image="./assets/images/de8e4601a21d4d8468437b7f356dff27_720.webp">
           <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_4.webp" alt="3w粉达成" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
           <p class="timeline-date">2026.5.3</p>
           <p class="timeline-title">3w粉达成</p>
           <p class="timeline-desc">在下午5:21的时刻，猫羽おかゆ迎来了自己的第3w个粉丝，5:21（?也许是爱意的体现！</p>
         </div>
-        <div class="timeline-item highlight">
+        <div class="timeline-item highlight" data-image="./assets/images/mainPicture1.webp">
           <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_5.webp" alt="百舰了！" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
           <p class="timeline-date">2026.5.6</p>
           <p class="timeline-title">百舰了！</p>
-          <p class="timeline-desc">在晚上9:57之时，猫羽おかゆ在仅直播不到十次，就以自己独当一面的直播风格迎来了自己的第100个舰长</p>
+          <p class="timeline-desc">在晚上9:57的时刻，猫羽おかゆ在仅直播不到十次，就以自己独当一面的直播风格迎来了自己的第100个舰长</p>
+        </div>
+        <div class="timeline-item" data-image="./assets/images/mainPicture2.webp">
+          <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_6.webp" alt="千粉丝团达成" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
+          <p class="timeline-date">2026.5.12 18:18</p>
+          <p class="timeline-title">千粉丝团达成</p>
+          <p class="timeline-desc">在下午18:18的时刻，猫羽おかゆ的粉丝团数量正式突破1000大关，从初次露相到千粉丝团仅用时不到一个月</p>
         </div>
       </div>
     </div>
@@ -1931,7 +350,7 @@
       <div class="video-grid">
         <div class="video-card" onclick="openVideoModal('あ↓いーうーえーおー', 'https://www.bilibili.com/video/BV1hRRSBcEgd', '字幕くん、また死んだの？')">
           <div class="video-thumbnail">
-            <img src="./image/video_1.jpg" alt="视频封面" class="video-cover">
+            <img src="./assets/images/video_1.webp" alt="视频封面" class="video-cover">
             <div class="video-duration">00:05</div>
           </div>
           <div class="video-info">
@@ -1941,7 +360,7 @@
         </div>
         <div class="video-card" onclick="openVideoModal('可爱瞬间2', 'https://www.bilibili.com/video/BV1Kg5J6uER7', 'ぐーぐーがーがー')">
           <div class="video-thumbnail">
-            <img src="./image/video_2.jpg" alt="视频封面" class="video-cover">
+            <img src="./assets/images/video_2.webp" alt="视频封面" class="video-cover">
             <div class="video-duration">00:15</div>
           </div>
           <div class="video-info">
@@ -2026,7 +445,57 @@
 <!-- Page6 - 小说页 -->
 <section class="page" id="page6">
   <div class="page-inner">
-    <h2 class="page-title">小説 · Novel</h2>
+    <h2 class="page-title">特殊贈り物 · Special Gifts</h2>
+    
+    <!-- 特殊赠礼板块 -->
+    <div class="special-gift-section">
+      <div class="section-title-wrapper">
+        <span class="tape tape-top-left"></span>
+        <span class="tape tape-top-right"></span>
+        <span class="tape tape-bottom-left"></span>
+        <span class="tape tape-bottom-right"></span>
+        <h3 class="section-title">限定コンテンツ · Exclusive Content</h3>
+      </div>
+      
+      <div class="gift-grid">
+        <!-- 视频模块 -->
+        <div class="gift-item gift-video" data-type="video" data-url="" data-title="">
+          <div class="gift-thumbnail">
+            <div class="gift-play-icon">▶</div>
+            <div class="gift-overlay"></div>
+          </div>
+          <div class="gift-info">
+            <span class="gift-label">限定动画</span>
+            <p class="gift-title">【预留】限定动画视频</p>
+          </div>
+          <span class="sticker sticker-1">特别</span>
+        </div>
+        
+        <!-- 图片模块1 -->
+        <div class="gift-item gift-image" data-type="image" data-url="" data-title="">
+          <div class="gift-thumbnail">
+            <div class="gift-overlay"></div>
+          </div>
+          <div class="gift-info">
+            <span class="gift-label">限定插画</span>
+            <p class="gift-title">【预留】限定插画一</p>
+          </div>
+          <span class="sticker sticker-2">限定</span>
+        </div>
+        
+        <!-- 图片模块2 -->
+        <div class="gift-item gift-image" data-type="image" data-url="" data-title="">
+          <div class="gift-thumbnail">
+            <div class="gift-overlay"></div>
+          </div>
+          <div class="gift-info">
+            <span class="gift-label">独家壁纸</span>
+            <p class="gift-title">【预留】独家壁纸</p>
+          </div>
+          <span class="sticker sticker-3">独家</span>
+        </div>
+      </div>
+    </div>
     
     <div class="novel-container">
       <div class="novel-column">
@@ -2052,626 +521,65 @@
   </div>
 </section>
 
-<script>
-  // 视频播放器功能
-  function openVideoModal(title, videoUrl, desc) {
-    const overlay = document.getElementById('videoModalOverlay');
-    const modalPlayer = document.getElementById('videoModalPlayer');
-    const modalDesc = document.getElementById('videoModalDesc');
-    
-    // 设置内容
-    modalDesc.textContent = title;
-    
-    // 转换B站链接为嵌入链接
-    // 示例: https://www.bilibili.com/video/BV1xx411c7mD -> //player.bilibili.com/player.html?bvid=BV1xx411c7mD
-    let embedUrl = videoUrl;
-    if (videoUrl.includes('bilibili.com/video/')) {
-      const bvid = videoUrl.match(/BV[a-zA-Z0-9]+/)?.[0];
-      if (bvid) {
-        embedUrl = `//player.bilibili.com/player.html?bvid=${bvid}&autoplay=1&muted=0`;
-      }
-    }
-    
-    modalPlayer.src = embedUrl;
-    
-    // 显示弹窗
-    overlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeVideoModal(event) {
-    // 如果点击的是关闭按钮或遮罩层本身，则关闭
-    if (!event || event.target.id === 'videoModalOverlay' || event.target.classList.contains('video-modal-close')) {
-      const overlay = document.getElementById('videoModalOverlay');
-      const modalPlayer = document.getElementById('videoModalPlayer');
-      
-      overlay.classList.remove('active');
-      modalPlayer.src = ''; // 停止播放
-      document.body.style.overflow = '';
-    }
-  }
-
-  // ESC键关闭视频弹窗
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      closeVideoModal();
-    }
-  });
-
-  // 倒计时功能
-  function updateCountdown() {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const birthday = new Date(currentYear, 5, 8);
-
-    if (now > birthday) {
-      birthday.setFullYear(currentYear + 1);
-    }
-
-    const diff = birthday - now;
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const secs = Math.floor((diff % (1000 * 60)) / 1000);
-
-    document.getElementById('cdDays').textContent = String(days).padStart(2, '0');
-    document.getElementById('cdHours').textContent = String(hours).padStart(2, '0');
-    document.getElementById('cdMins').textContent = String(mins).padStart(2, '0');
-    document.getElementById('cdSecs').textContent = String(secs).padStart(2, '0');
-
-    const caption = document.getElementById('cdCaption');
-    const today = new Date();
-    const isBirthday = today.getMonth() === 5 && today.getDate() === 8;
-    const isAfterBirthday = today > new Date(currentYear, 5, 8);
-
-    if (isBirthday) {
-      caption.innerHTML = '<span class="date">生日快乐！</span>';
-    } else if (isAfterBirthday) {
-      caption.innerHTML = '距离<span class="date">6月8日</span>还有';
-    } else {
-      caption.innerHTML = '距离<span class="date">6月8日</span>还有';
-    }
-  }
-
-  updateCountdown();
-  setInterval(updateCountdown, 1000);
-
-  // 图片切换功能
-  const images = [
-    './image/mainPicture1.jpg',
-    './image/mainPicture2.jpg',
-    './image/mainPicture3.jpg',
-    './image/mainPicture4.jpg',
-    './image/mainPicture5.jpg'
-  ];
-  let currentImageIndex = 0;
-  const mainPhoto = document.getElementById('mainPhoto');
-  const photoNext = document.getElementById('photoNext');
-  let isTransitioning = false;
-
-  function nextImage() {
-    if (isTransitioning) return;
-    isTransitioning = true;
-
-    const nextIndex = (currentImageIndex + 1) % images.length;
-    const nextSrc = images[nextIndex];
-
-    const nextImg = new Image();
-    nextImg.src = nextSrc;
-    nextImg.onload = function() {
-      photoNext.src = nextSrc;
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
-          photoNext.style.opacity = '1';
-
-          setTimeout(function() {
-            mainPhoto.src = nextSrc;
-            photoNext.style.opacity = '0';
-
-            setTimeout(function() {
-              currentImageIndex = nextIndex;
-              isTransitioning = false;
-            }, 100);
-          }, 1000);
-        });
-      });
-    };
-    nextImg.onerror = nextImg.onload;
-  }
-
-  mainPhoto.style.opacity = '1';
-  photoNext.style.opacity = '0';
-
-  // 导航栏点击
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const pageNum = item.dataset.page;
-      const page = document.getElementById('page' + pageNum);
-      page.scrollIntoView({ behavior: 'smooth' });
-    });
-  });
-
-  // 滚动监听，高亮导航
-  const pages = document.querySelectorAll('.page');
-  const navItems = document.querySelectorAll('.nav-item');
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const pageId = entry.target.id;
-        const pageNum = pageId.replace('page', '');
-        
-        navItems.forEach(item => {
-          item.classList.remove('active');
-          if (item.dataset.page === pageNum) {
-            item.classList.add('active');
-          }
-        });
-      }
-    });
-  }, { threshold: 0.5 });
-
-  pages.forEach(page => observer.observe(page));
-
-  // 弹幕功能
-  const danmakuContainer = document.getElementById('danmakuContainer');
-  const sampleDanmaku = [
-    { name: '粉丝1', text: 'おかゆちゃん、誕生日おめでとう！いつも楽しくさせてくれてありがとう！' },
-    { name: '猫粥宝', text: '初めて見たときから虜になりました！これからも応援します！' },
-    { name: '匿名艦長', text: '歌声がとても癒されます。毎日聴きに来ています。' },
-    { name: 'ねこねこ', text: 'ぐーぐーがーがー！可愛すぎる！' },
-    { name: 'Fan', text: 'ライブ配信が楽しみで仕方ありません！' },
-    { name: '猫羽推し', text: 'いつも笑顔でいてくれてありがとう。心から応援しています！' },
-    { name: '新しいファン', text: '最近ファンになりましたが、とても魅力的な配信者さんです！' },
-    { name: '家族の一員', text: 'ねこねこ家族、最高です！みんなでおかゆちゃんを応援しましょう！' },
-    { name: '海外ファン', text: '日本語はあまり得意ではありませんが、おかゆちゃんの配信を見るのが楽しみです！' },
-    { name: '長年のファン', text: 'デビューからずっと応援しています。これからもよろしくお願いします！' },
-    { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-    { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-    { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-    { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-    { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' }
-  ];
-
-  function createDanmaku(name, text) {
-    const el = document.createElement('div');
-    el.className = 'danmaku-item';
-    el.innerHTML = '<span class="danmaku-name">' + name + '</span><span class="danmaku-text">| ' + text + '</span>';
-    el.style.top = (Math.random() * 50) + 'vh';
-    el.style.animationDuration = (10 + Math.random() * 6) + 's';
-    danmakuContainer.appendChild(el);
-    
-    setTimeout(() => {
-      el.remove();
-    }, 18000);
-  }
-
-  // 渲染粉丝留言板
-  function renderMessages() {
-    const messagesContainer = document.getElementById('messagesContainer');
-    const messagesCount = document.getElementById('messagesCount');
-    
-    if (!messagesContainer) return;
-    
-    // 更新留言数量
-    if (messagesCount) {
-      messagesCount.textContent = sampleDanmaku.length + ' 件';
-    }
-    
-    // 清空容器
-    messagesContainer.innerHTML = '';
-    
-    // 遍历弹幕数据，创建留言卡片
-    sampleDanmaku.forEach((item, index) => {
-      const card = document.createElement('div');
-      card.className = 'message-card';
-      card.style.animationDelay = (index * 0.1) + 's';
-      
-      // 获取名字首字母作为头像显示
-      const firstChar = item.name.charAt(0);
-      
-      card.innerHTML = `
-        <div class="message-header-inner">
-          <div class="message-avatar">${firstChar}</div>
-          <p class="message-sender">${item.name}</p>
-        </div>
-        <p class="message-text">${item.text}</p>
-        <div class="message-time">${getRandomTime()}</div>
-      `;
-      
-      messagesContainer.appendChild(card);
-    });
-  }
-
-  // 生成随机时间
-  function getRandomTime() {
-    const hours = Math.floor(Math.random() * 24);
-    const mins = Math.floor(Math.random() * 60);
-    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-  }
-
-  // 自动播放弹幕
-  let sampleIndex = 0;
-  setInterval(() => {
-    const d = sampleDanmaku[sampleIndex];
-    createDanmaku(d.name, d.text);
-    sampleIndex = (sampleIndex + 1) % sampleDanmaku.length;
-  }, 3000);
-
-  // 发送弹幕
-  function sendDanmaku() {
-    const nameInput = document.getElementById('danmakuName');
-    const textInput = document.getElementById('danmakuText');
-    
-    // 检查必要的元素是否存在
-    if (!nameInput || !textInput) {
-      console.warn('发送弹幕所需的输入元素不存在');
-      return;
-    }
-    
-    const name = nameInput.value.trim() || '匿名艦長';
-    const text = textInput.value.trim();
-    
-    if (!text) {
-      alert('コメントを入力してください');
-      return;
-    }
-
-    createDanmaku(name, text);
-
-    // 添加到留言列表（如果元素存在的话）
-    const messagesBox = document.getElementById('messagesBox');
-    if (messagesBox) {
-      const messageItem = document.createElement('div');
-      messageItem.className = 'message-item';
-      messageItem.innerHTML = `
-        <p class="message-sender">${name.replace(/</g, '&lt;')}</p>
-        <p class="message-text">${text.replace(/</g, '&lt;')}</p>
-      `;
-      messagesBox.prepend(messageItem);
-      messagesBox.scrollTop = 0;
-    }
-
-    nameInput.value = '';
-    textInput.value = '';
-  }
-
-  // 回车发送
-  const danmakuTextInput = document.getElementById('danmakuText');
-  if (danmakuTextInput) {
-    danmakuTextInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        sendDanmaku();
-      }
-    });
-  }
-
-  // 音乐播放/关闭
-  let isPlaying = false;
-  function toggleMusic() {
-    const music = document.getElementById('bgMusic');
-    const btn = document.getElementById('musicBtn');
-
-    if (isPlaying) {
-      music.pause();
-      btn.classList.remove('on');
-      btn.classList.add('off');
-    } else {
-      music.play().catch(() => {});
-      btn.classList.remove('off');
-      btn.classList.add('on');
-    }
-    isPlaying = !isPlaying;
-  }
-
-  // 弹幕显示模式切换（全屏 -> 半屏 -> 四分之一屏 -> 关闭 -> 全屏）
-  let danmakuMode = 0; // 0: 全屏, 1: 半屏, 2: 四分之一屏, 3: 关闭
-  const danmakuBtn = document.getElementById('danmakuBtn');
-  const danmakuBadge = document.getElementById('danmakuBadge');
-
-  function toggleDanmaku() {
-    danmakuMode = (danmakuMode + 1) % 4;
-
-    switch(danmakuMode) {
-      case 0: // 全屏
-        danmakuContainer.style.height = '100vh';
-        danmakuContainer.style.display = 'block';
-        danmakuBtn.classList.remove('off');
-        danmakuBtn.classList.add('on');
-        danmakuBadge.textContent = '';
-        break;
-      case 1: // 半屏
-        danmakuContainer.style.height = '50vh';
-        danmakuContainer.style.display = 'block';
-        danmakuBtn.classList.remove('off');
-        danmakuBtn.classList.add('on');
-        danmakuBadge.textContent = '1/2';
-        break;
-      case 2: // 四分之一屏
-        danmakuContainer.style.height = '25vh';
-        danmakuContainer.style.display = 'block';
-        danmakuBtn.classList.remove('off');
-        danmakuBtn.classList.add('on');
-        danmakuBadge.textContent = '1/4';
-        break;
-      case 3: // 关闭
-        danmakuContainer.style.display = 'none';
-        danmakuBtn.classList.remove('on');
-        danmakuBtn.classList.add('off');
-        danmakuBadge.textContent = '';
-        break;
-    }
-  }
-
-  // 樱花飘落效果
-  function createSakura() {
-    const sakura = document.createElement('div');
-    sakura.className = 'sakura';
-    const flowerTypes = ['❀', '✿', '❁', '✾', '❃', '✿'];
-    const flowerColors = ['#ffb7c5', '#ffc0cb', '#f8b4c4', '#e89bb3', '#d4708a', '#f5a3b5'];
-    const randomType = flowerTypes[Math.floor(Math.random() * flowerTypes.length)];
-    const randomColor = flowerColors[Math.floor(Math.random() * flowerColors.length)];
-    sakura.innerHTML = randomType;
-    sakura.style.left = Math.random() * 100 + 'vw';
-    sakura.style.fontSize = (10 + Math.random() * 18) + 'px';
-    sakura.style.opacity = 0.3 + Math.random() * 0.5;
-    sakura.style.color = randomColor;
-    sakura.style.animationDuration = (6 + Math.random() * 8) + 's';
-    document.body.appendChild(sakura);
-
-    setTimeout(() => {
-      sakura.remove();
-    }, 15000);
-  }
-
-  setInterval(createSakura, 200);
-
-  // scroll组件滚动显示/隐藏逻辑
-  const scrollHint = document.querySelector('.scroll-hint');
-  let scrollHintShown = false;
-
-  function handleScrollHint() {
-    const shouldShow = window.scrollY <= 100;
-
-    if (shouldShow && scrollHintShown) {
-      scrollHint.classList.remove('hidden');
-      scrollHintShown = false;
-    } else if (!shouldShow && !scrollHintShown) {
-      scrollHint.classList.add('hidden');
-      scrollHintShown = true;
-    }
-  }
-
-  window.addEventListener('scroll', handleScrollHint);
-  handleScrollHint();
-  
-  // 页面加载完成后渲染粉丝留言板
-  renderMessages();
-
-  // 加载小说内容
-  async function loadNovelContent() {
-    const jpContainer = document.getElementById('novelJapanese');
-    const zhContainer = document.getElementById('novelChinese');
-    
-    // 加载日语内容
-    try {
-      const jpResponse = await fetch('./novel_jp.txt');
-      if (jpResponse.ok) {
-        const jpText = await jpResponse.text();
-        jpContainer.innerHTML = formatNovelText(jpText, 'jp');
-      } else {
-        jpContainer.innerHTML = '<p class="empty-text">【日本語の小説テキストをここに入力してください】</p>';
-      }
-    } catch (error) {
-      jpContainer.innerHTML = '<p class="empty-text">【日本語の小説テキストをここに入力してください】</p>';
-    }
-    
-    // 加载中文内容
-    try {
-      const zhResponse = await fetch('./novel_zh.txt');
-      if (zhResponse.ok) {
-        const zhText = await zhResponse.text();
-        zhContainer.innerHTML = formatNovelText(zhText, 'zh');
-      } else {
-        zhContainer.innerHTML = '<p class="empty-text">【请在此输入中文小说文本】</p>';
-      }
-    } catch (error) {
-      zhContainer.innerHTML = '<p class="empty-text">【请在此输入中文小说文本】</p>';
-    }
-    
-    // 内容加载完成后设置同步功能
-    setTimeout(setupNovelSync, 100);
-  }
-
-  // 格式化小说文本（按换行分割成段落，保留空行）
-  function formatNovelText(text, lang) {
-    // 按换行分割，保留所有行（包括空行）
-    const paragraphs = text.split('\n');
-    // 每个段落用<p>标签包裹，空行标记为empty，空行也保留序号信息
-    return paragraphs.map((p, i) => {
-      const trimmedText = p.trim();
-      if (!trimmedText) {
-        // 空行：尝试从下一行或根据上下文获取序号
-        return `<p class="novel-paragraph empty" data-index="${i}" data-serial="" data-lang="${lang}">&nbsp;</p>`;
-      }
-      // 提取开头的段落序号（如 "1." "1、" "【1】" 等格式）
-      const serialMatch = trimmedText.match(/^([\d]+)[.、:：]\s*/);
-      const serial = serialMatch ? serialMatch[1] : '';
-      // 移除序号后显示
-      const cleanedText = serialMatch ? trimmedText.replace(serialMatch[0], '') : trimmedText;
-      return `<p class="novel-paragraph" data-index="${i}" data-serial="${serial}" data-lang="${lang}">${cleanedText}</p>`;
-    }).join('');
-  }
-
-  // 段落悬停高亮和同步滚动（使用data-serial序号匹配）
-  function setupNovelSync() {
-    const jpContainer = document.getElementById('novelJapanese');
-    const zhContainer = document.getElementById('novelChinese');
-
-    // 获取所有段落
-    const allParagraphs = document.querySelectorAll('.novel-paragraph');
-
-    // 移除旧的事件监听器（防止重复绑定）
-    allParagraphs.forEach(p => {
-      const newP = p.cloneNode(true);
-      p.parentNode.replaceChild(newP, p);
-    });
-
-    // 重新获取段落
-    const jpParagraphs = Array.from(jpContainer.querySelectorAll('.novel-paragraph'));
-    const zhParagraphs = Array.from(zhContainer.querySelectorAll('.novel-paragraph'));
-
-    // 建立序号到段落的映射（用于快速查找）
-    const jpSerialMap = new Map();
-    const zhSerialMap = new Map();
-
-    jpParagraphs.forEach(p => {
-      const serial = p.dataset.serial;
-      if (serial) {
-        jpSerialMap.set(serial, p);
-      }
-    });
-
-    zhParagraphs.forEach(p => {
-      const serial = p.dataset.serial;
-      if (serial) {
-        zhSerialMap.set(serial, p);
-      }
-    });
-
-    // 高亮对应段落（使用data-serial序号匹配）
-    function highlightPair(sourceP, isJp) {
-      // 移除所有高亮
-      document.querySelectorAll('.novel-paragraph.highlighted').forEach(p => {
-        p.classList.remove('highlighted');
-      });
-
-      // 获取当前段落的序号
-      const sourceSerial = sourceP.dataset.serial;
-      const targetSerialMap = isJp ? zhSerialMap : jpSerialMap;
-      const targetContainer = isJp ? zhContainer : jpContainer;
-
-      // 高亮当前段落（非空行）
-      if (!sourceP.classList.contains('empty') && sourceSerial) {
-        sourceP.classList.add('highlighted');
-      }
-
-      // 使用序号查找对应的目标段落
-      if (sourceSerial && targetSerialMap.has(sourceSerial)) {
-        const targetP = targetSerialMap.get(sourceSerial);
-        // 高亮目标段落（非空行）
-        if (!targetP.classList.contains('empty')) {
-          targetP.classList.add('highlighted');
-        }
-
-        // 滚动到对应位置
-        const containerHeight = targetContainer.clientHeight;
-        const targetTop = targetP.offsetTop;
-        const scrollTarget = Math.max(0, targetTop - containerHeight / 3);
-
-        targetContainer.scrollTo({
-          top: scrollTarget,
-          behavior: 'smooth'
-        });
-      }
-    }
-
-    // 为日语段落添加事件监听
-    jpParagraphs.forEach(p => {
-      p.addEventListener('mouseenter', () => highlightPair(p, true));
-    });
-
-    // 为中文段落添加事件监听
-    zhParagraphs.forEach(p => {
-      p.addEventListener('mouseenter', () => highlightPair(p, false));
-    });
-
-    // 鼠标离开时移除所有高亮
-    document.addEventListener('mouseleave', (e) => {
-      const target = e.target;
-      if (target && target.classList && !target.classList.contains('novel-paragraph') && !(target.closest && target.closest('.novel-content'))) {
-        document.querySelectorAll('.novel-paragraph.highlighted').forEach(hp => {
-          hp.classList.remove('highlighted');
-        });
-      }
-    }, true);
-  }
-
-  // 页面加载完成后加载小说内容
-  document.addEventListener('DOMContentLoaded', loadNovelContent);
-</script>
-
-<style>
-  .sakura {
-    position: fixed;
-    top: -50px;
-    color: #ffb7c5;
-    animation: sakura-fall linear forwards;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  @keyframes sakura-fall {
-    0% {
-      transform: translateY(0) rotate(0deg) translateX(0);
-      opacity: 0;
-    }
-    10% {
-      opacity: 1;
-    }
-    90% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(110vh) rotate(360deg) translateX(50px);
-      opacity: 0;
-    }
-  }
-</style>
-
-<!-- Page5 - 鸣谢 -->
-<section class="page" id="page5">
-  <div class="page-inner" style="text-align: center;">
+  <script src="./assets/js/main.js"></script>
+
+<!-- 礼物弹窗 -->
+<div class="gift-modal-overlay" id="giftModalOverlay">
+  <div class="gift-modal">
+    <button class="gift-modal-close" id="giftModalClose">×</button>
+    <div class="gift-modal-content" id="giftModalContent">
+      <!-- 内容将由 JavaScript 动态填充 -->
+    </div>
+    <div class="gift-modal-caption">
+      <h4 class="gift-modal-title" id="giftModalTitle">标题</h4>
+      <p class="gift-modal-desc" id="giftModalDesc">描述</p>
+    </div>
+  </div>
+</div>
+
+<!-- Page7 - 鸣谢 -->
+<section class="page" id="page7">
+      <div class="page-inner page7-inner">
     <h2 class="page-title">致谢 · Acknowledgments</h2>
-    <div class="credits-wrapper" style="margin-top: 60px;">
-      <p class="credits-text" style="font-size: 1.3em; color: #5a4a3a; line-height: 2; margin-bottom: 40px;">
+      <div class="credits-wrapper">
+      <p class="credits-text">
         <span class="placeholder-text">感谢每一位陪伴猫羽おかゆ的你</span><br>
         <span class="placeholder-text">是你们的支持让她走到了这里</span>
       </p>
-      <div class="credits-list" style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
-        <div class="credits-item" style="color: #7a6a5a; font-size: 1.1em;">
+      <div class="credits-list">
+        <div class="credits-item">
           <span class="placeholder-text">1</span>
         </div>
-        <div class="credits-item" style="color: #7a6a5a; font-size: 1.1em;">
+        <div class="credits-item">
           <span class="placeholder-text">2</span>
         </div>
-        <div class="credits-item" style="color: #7a6a5a; font-size: 1.1em;">
+        <div class="credits-item">
           <span class="placeholder-text">3</span>
         </div>
       </div>
-      <p class="credits-final" style="margin-top: 80px; font-size: 1.5em; color: #ffb7c5;">
+      <p class="credits-final">
         <span class="placeholder-text">おかゆ、生日快乐！</span>
       </p>
-      <div class="follow-section" style="margin-top: 60px; display: flex; flex-direction: column; align-items: center; gap: 24px;">
-        <p style="font-size: 1.3em; color: #5a4a3a; font-weight: 500;">关注猫羽おかゆ谢谢喵</p>
-        <div class="social-links" style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;">
-          <a href="https://space.bilibili.com/3706969395300793" target="_blank" class="social-link" style="display: inline-flex; align-items: center; gap: 6px; padding: 12px 24px; background: linear-gradient(135deg, #fb7299 0%, #fc8bb3 100%); color: #fff; text-decoration: none; border-radius: 8px; font-size: 1em; box-shadow: 0 4px 15px rgba(251,113,153,0.3);">
+      <div class="follow-section">
+        <p class="follow-text">关注猫羽おかゆ谢谢喵</p>
+        <div class="social-links">
+          <a href="https://space.bilibili.com/3706969395300793" target="_blank" class="social-link social-link-bilibili">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.56 3.76v7.36c-.036 1.51-.556 2.769-1.56 3.773s-2.262 1.524-3.773 1.56H5.333c-1.51-.036-2.769-.556-3.773-1.56S.036 18.858 0 17.347v-7.36c.036-1.511.556-2.765 1.56-3.76 1.004-.996 2.262-1.52 3.773-1.574h.774l-1.174-1.12a1.234 1.234 0 0 1-.373-.906c0-.347.124-.64.373-.88.248-.24.552-.36.914-.36h2.986c.347 0 .64.107.879.32.24.214.392.48.456.8l1.107 8.666c.07.318.035.576-.106.773-.14.198-.35.296-.627.296h-1.44a1.22 1.22 0 0 1-.426-.08 2.842 2.842 0 0 1-.373-.24l-6.413-6.413v5.306L7.56 17.12l.48.48a2.34 2.34 0 0 1 .533.666 2.07 2.07 0 0 1-.746 2.774 2.742 2.742 0 0 1-1.146.4 2.62 2.62 0 0 1-1.106-.106 3.14 3.14 0 0 1-.96-.426 2.894 2.894 0 0 1-.693-.693 2.719 2.719 0 0 1-.426-.96 2.527 2.527 0 0 1-.107-1.106c.036-.374.16-.72.374-1.04.213-.32.48-.587.8-.8l4.826-4.826V6.573a2.527 2.527 0 0 1-.106-1.106c.035-.383.16-.72.373-1.013.214-.292.48-.534.8-.726.32-.191.666-.32 1.04-.386.374-.065.733-.08 1.08-.04l-.906 1.013z"/></svg>
             <span>B站主页</span>
           </a>
-          <a href="https://twitter.com/Nekoha_Okayu" target="_blank" class="social-link" style="display: inline-flex; align-items: center; gap: 6px; padding: 12px 24px; background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: #fff; text-decoration: none; border-radius: 8px; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+          <a href="https://twitter.com/Nekoha_Okayu" target="_blank" class="social-link social-link-twitter">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             <span>@Nekoha_Okayu</span>
           </a>
-          <a href="https://www.youtube.com/@Nekoha_Okayu" target="_blank" class="social-link" style="display: inline-flex; align-items: center; gap: 6px; padding: 12px 24px; background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%); color: #fff; text-decoration: none; border-radius: 8px; font-size: 1em; box-shadow: 0 4px 15px rgba(255,0,0,0.3);">
+          <a href="https://www.youtube.com/@Nekoha_Okayu" target="_blank" class="social-link social-link-youtube">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
             <span>YouTube</span>
           </a>
         </div>
-        <div style="margin-top: 16px; padding: 16px 24px; background: rgba(255,183,197,0.15); border-radius: 12px; border: 1px dashed #ffb7c5;">
-          <p style="font-size: 0.95em; color: #7a6a5a; margin: 0;">
+        <div class="credit-badge">
+          <p>
             <span class="placeholder-text">bilibili介绍朋友</span> →
-            <a href="https://space.bilibili.com/1749759796" target="_blank" style="color: #fb7299; text-decoration: none; font-weight: 500;">直达链接</a>
+            <a href="https://space.bilibili.com/1749759796" target="_blank">直达链接</a>
           </p>
         </div>
       </div>
