@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>猫羽おかゆ お誕生日</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
@@ -13,11 +14,11 @@
 
 <!-- 控制按钮 -->
 <div class="control-buttons">
-  <button class="control-btn off" id="musicBtn" onclick="toggleMusic()">
+  <button class="control-btn off" id="musicBtn">
     <span class="btn-text">音</span>
     <span class="strike-line"></span>
   </button>
-  <button class="control-btn on" id="danmakuBtn" onclick="toggleDanmaku()">
+  <button class="control-btn on" id="danmakuBtn">
     <span class="btn-text">弹</span>
     <span class="strike-line"></span>
     <span class="btn-badge" id="danmakuBadge"></span>
@@ -31,10 +32,10 @@
 </audio></audio>
 
 <!-- 视频播放器悬浮窗口 -->
-<div class="video-modal-overlay" id="videoModalOverlay" onclick="closeVideoModal(event)">
-  <div class="video-modal" onclick="event.stopPropagation()">
+<div class="video-modal-overlay" id="videoModalOverlay">
+  <div class="video-modal">
     <div class="video-modal-content">
-      <button class="video-modal-close" onclick="closeVideoModal()">×</button>
+      <button class="video-modal-close">×</button>
       <iframe class="video-modal-player" id="videoModalPlayer" allowfullscreen></iframe>
     </div>
     <div class="video-modal-info">
@@ -95,7 +96,7 @@
       <div class="page1-right">
         <div class="portrait-card" style="--tilt: -2deg;">
           <div class="portrait-tape"></div>
-          <div class="portrait-photo-wrap" onclick="nextImage()">
+          <div class="portrait-photo-wrap" id="portraitPhotoWrap">
             <img src="./assets/images/mainPicture1.webp" alt="猫羽おかゆ" class="portrait-photo" id="mainPhoto">
             <img src="./assets/images/mainPicture1.webp" alt="猫羽おかゆ" class="portrait-photo photo-next" id="photoNext">
             <span class="portrait-key">✦</span>
@@ -279,7 +280,9 @@
           <div class="timeline-dot"></div>
           <div class="timeline-tooltip">
             <div class="tooltip-arrow"></div>
+            <!-- TODO: 待补齐 timeline_2.webp 后恢复
             <img class="tooltip-image" src="./assets/images/timeline_2.webp" alt="涨粉潮" />
+            -->
             <span class="tooltip-caption">点击放大</span>
           </div>
           <p class="timeline-date">2026.4.19</p>
@@ -323,7 +326,9 @@
           <div class="timeline-dot"></div>
           <div class="timeline-tooltip">
             <div class="tooltip-arrow"></div>
+            <!-- TODO: 待补齐 timeline_6.webp 后恢复
             <img class="tooltip-image" src="./assets/images/timeline_6.webp" alt="千粉丝团达成" />
+            -->
             <span class="tooltip-caption">点击放大</span>
           </div>
           <p class="timeline-date">2026.5.12 18:18</p>
@@ -348,7 +353,7 @@
         <p class="section-desc">捕捉那些可爱有趣的瞬间</p>
       </div>
       <div class="video-grid">
-        <div class="video-card" onclick="openVideoModal('あ↓いーうーえーおー', 'https://www.bilibili.com/video/BV1hRRSBcEgd', '字幕くん、また死んだの？')">
+        <div class="video-card" data-title="あ↓いーうーえーおー" data-url="https://www.bilibili.com/video/BV1hRRSBcEgd" data-desc="字幕くん、また死んだの？">
           <div class="video-thumbnail">
             <img src="./assets/images/video_1.webp" alt="视频封面" class="video-cover">
             <div class="video-duration">00:05</div>
@@ -358,7 +363,7 @@
             <p class="video-desc">字幕くん、また死んだの？</p>
           </div>
         </div>
-        <div class="video-card" onclick="openVideoModal('可爱瞬间2', 'https://www.bilibili.com/video/BV1Kg5J6uER7', 'ぐーぐーがーがー')">
+        <div class="video-card" data-title="可爱瞬间2" data-url="https://www.bilibili.com/video/BV1Kg5J6uER7" data-desc="ぐーぐーがーがー">
           <div class="video-thumbnail">
             <img src="./assets/images/video_2.webp" alt="视频封面" class="video-cover">
             <div class="video-duration">00:15</div>
@@ -368,7 +373,7 @@
             <p class="video-desc">ASMRですね~</p>
           </div>
         </div>
-        <div class="video-card" onclick="openVideoModal('可爱瞬间3', 'https://www.bilibili.com/video/BV1xx411c7mD', '有趣的直播片段')">
+        <div class="video-card" data-title="可爱瞬间3" data-url="https://www.bilibili.com/video/BV1xx411c7mD" data-desc="有趣的直播片段">
           <div class="video-thumbnail">
             <img src="" alt="视频封面" class="video-cover">
             <div class="video-duration">00:00</div>
@@ -389,7 +394,7 @@
         <p class="section-desc">聆听治愈人心的歌声</p>
       </div>
       <div class="video-grid">
-        <div class="video-card" onclick="openVideoModal('翻唱歌曲1', 'https://www.bilibili.com/video/BV1xx411c7mD', '深情演唱')">
+        <div class="video-card" data-title="翻唱歌曲1" data-url="https://www.bilibili.com/video/BV1xx411c7mD" data-desc="深情演唱">
           <div class="video-thumbnail">
             <img src="" alt="视频封面" class="video-cover">
             <div class="video-duration">00:00</div>
@@ -399,7 +404,7 @@
             <p class="video-desc">深情演唱</p>
           </div>
         </div>
-        <div class="video-card" onclick="openVideoModal('翻唱歌曲2', 'https://www.bilibili.com/video/BV1xx411c7mD', '深情演唱')">
+        <div class="video-card" data-title="翻唱歌曲2" data-url="https://www.bilibili.com/video/BV1xx411c7mD" data-desc="深情演唱">
           <div class="video-thumbnail">
             <img src="" alt="视频封面" class="video-cover">
             <div class="video-duration">00:00</div>
@@ -409,7 +414,7 @@
             <p class="video-desc">深情演唱</p>
           </div>
         </div>
-        <div class="video-card" onclick="openVideoModal('翻唱歌曲3', 'https://www.bilibili.com/video/BV1xx411c7mD', '深情演唱')">
+        <div class="video-card" data-title="翻唱歌曲3" data-url="https://www.bilibili.com/video/BV1xx411c7mD" data-desc="深情演唱">
           <div class="video-thumbnail">
             <img src="" alt="视频封面" class="video-cover">
             <div class="video-duration">00:00</div>

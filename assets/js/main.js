@@ -649,7 +649,8 @@ class DanmakuAutoPlayer {
 }
 
 // 初始化弹幕发送器
-const danmakuSender = new DanmakuSender();
+// 仅当 HTML 中存在发送弹幕的输入区时才初始化，避免在该功能尚未实现时打出 warn
+const danmakuSender = document.getElementById('danmakuText') ? new DanmakuSender() : null;
 
 // 初始化弹幕自动播放器
 const danmakuAutoPlayer = new DanmakuAutoPlayer(danmakuManager, sampleDanmaku, { interval: 3000 });
@@ -1343,6 +1344,148 @@ class TimelineImageViewer {
   }
 }
 
+// ===== 视频弹窗控制器 =====
+class VideoModalController {
+  constructor() {
+    this.overlay = document.getElementById('videoModalOverlay');
+    this.modal = this.overlay ? this.overlay.querySelector('.video-modal') : null;
+    this.iframe = document.getElementById('videoModalPlayer');
+    this.descEl = document.getElementById('videoModalDesc');
+    this.closeBtn = this.overlay ? this.overlay.querySelector('.video-modal-close') : null;
+    this.cards = document.querySelectorAll('.video-card');
+    this._keydownHandler = null;
+    this.init();
+  }
+
+  init() {
+    if (!this.overlay || !this.iframe || !this.closeBtn) {
+      console.warn('VideoModalController: 缺少必要的DOM元素');
+      return;
+    }
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    this.cards.forEach(card => {
+      card.addEventListener('click', () => {
+        this.open({
+          title: card.dataset.title || '',
+          url: card.dataset.url || '',
+          desc: card.dataset.desc || ''
+        });
+      });
+    });
+
+    this.closeBtn.addEventListener('click', () => this.close());
+
+    // 点击遮罩关闭（不响应弹窗内点击）
+    this.overlay.addEventListener('click', (e) => {
+      if (e.target === this.overlay) this.close();
+    });
+
+    // ESC 关闭
+    this._keydownHandler = (e) => {
+      if (e.key === 'Escape' && this.overlay.classList.contains('active')) {
+        this.close();
+      }
+    };
+    document.addEventListener('keydown', this._keydownHandler);
+  }
+
+  open({ title, url, desc }) {
+    const embedSrc = this.buildEmbedSrc(url);
+    this.iframe.src = embedSrc;
+    if (this.descEl) {
+      this.descEl.textContent = desc || title || '';
+    }
+    this.overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  close() {
+    this.overlay.classList.remove('active');
+    // 关键：清空 iframe.src 停止后台播放与发声
+    this.iframe.src = '';
+    document.body.style.overflow = '';
+  }
+
+  buildEmbedSrc(url) {
+    const match = url && url.match(/BV[a-zA-Z0-9]+/);
+    if (match) {
+      return `//player.bilibili.com/player.html?bvid=${match[0]}&autoplay=0&high_quality=1&danmaku=0`;
+    }
+    return url || '';
+  }
+
+  destroy() {
+    if (this._keydownHandler) {
+      document.removeEventListener('keydown', this._keydownHandler);
+    }
+    this.overlay = null;
+    this.iframe = null;
+    this.closeBtn = null;
+    this.cards = null;
+  }
+}
+
+// ===== 头像图片切换器 =====
+class PortraitGallery {
+  constructor(options = {}) {
+    this.images = options.images || [];
+    this.wrap = document.getElementById('portraitPhotoWrap');
+    this.activePhoto = document.getElementById('mainPhoto');
+    this.hiddenPhoto = document.getElementById('photoNext');
+    this.currentIndex = 0;
+    this._isAnimating = false;
+    this.init();
+  }
+
+  init() {
+    if (!this.wrap || !this.activePhoto || !this.hiddenPhoto || this.images.length === 0) {
+      console.warn('PortraitGallery: 缺少必要的DOM元素或图片列表为空');
+      return;
+    }
+    // 同步初始 src 到 activePhoto，避免与首张不一致
+    if (this.images[0]) {
+      this.activePhoto.src = this.images[0];
+    }
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    this.wrap.addEventListener('click', () => this.next());
+  }
+
+  next() {
+    if (this._isAnimating) return;
+    this._isAnimating = true;
+
+    this.currentIndex = (this.currentIndex + 1) % this.images.length;
+    const nextSrc = this.images[this.currentIndex];
+
+    this.hiddenPhoto.src = nextSrc;
+    // 交叉淡入：把隐藏图淡入，把当前图淡出
+    this.hiddenPhoto.classList.remove('photo-next');
+    this.activePhoto.classList.add('photo-next');
+
+    // 交换引用，下一次点击时角色互换
+    const swap = this.activePhoto;
+    this.activePhoto = this.hiddenPhoto;
+    this.hiddenPhoto = swap;
+
+    // CSS 中 opacity transition 为 1s
+    window.setTimeout(() => {
+      this._isAnimating = false;
+    }, 1000);
+  }
+
+  destroy() {
+    this.wrap = null;
+    this.activePhoto = null;
+    this.hiddenPhoto = null;
+  }
+}
+
 // ===== 页面初始化 =====
 document.addEventListener('DOMContentLoaded', async () => {
   // 加载小说内容并设置同步
@@ -1359,4 +1502,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 初始化时间线图片查看器
   const timelineImageViewer = new TimelineImageViewer();
+
+  // 初始化视频弹窗
+  const videoModalController = new VideoModalController();
+
+  // 初始化头像切图
+  const portraitGallery = new PortraitGallery({
+    images: [
+      './assets/images/mainPicture1.webp',
+      './assets/images/mainPicture2.webp',
+      './assets/images/mainPicture3.webp',
+      './assets/images/mainPicture4.webp',
+      './assets/images/mainPicture5.webp'
+    ]
+  });
 });
