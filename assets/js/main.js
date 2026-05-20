@@ -649,7 +649,8 @@ class DanmakuAutoPlayer {
 }
 
 // 初始化弹幕发送器
-const danmakuSender = new DanmakuSender();
+// 仅当 HTML 中存在发送弹幕的输入区时才初始化，避免在该功能尚未实现时打出 warn
+const danmakuSender = document.getElementById('danmakuText') ? new DanmakuSender() : null;
 
 // 初始化弹幕自动播放器
 const danmakuAutoPlayer = new DanmakuAutoPlayer(danmakuManager, sampleDanmaku, { interval: 3000 });
@@ -901,11 +902,16 @@ class ScrollHintController {
 // 初始化滚动提示
 const scrollHintController = new ScrollHintController({ threshold: 100 });
 
-// ===== 小说内容加载器 =====
+// ===== 小说内容加载器（JSON 驱动） =====
+//
+// 直接读取预先对齐过的 novel_data.json：
+//   [{ "id": 1, "jp": "...", "zh": "..." }, ...]
+// 每个 entry 是一对在语义上已经一一对应的中日段落。
+// 不再分别拉两份 txt + 用正则切分 + 推测 pidx/serial——
+// 那套启发式在翻译合并/拆分场景下永远是脆的。
 class NovelLoader {
   constructor(options = {}) {
-    this.jpUrl = options.jpUrl || './novel_jp.txt';
-    this.zhUrl = options.zhUrl || './novel_zh.txt';
+    this.dataUrl = options.dataUrl || './novel_data.json';
     this.elements = {
       jpContainer: document.getElementById('novelJapanese'),
       zhContainer: document.getElementById('novelChinese')
@@ -914,65 +920,65 @@ class NovelLoader {
   }
 
   async load() {
-    // 并行加载中日文内容
-    const [jpResult, zhResult] = await Promise.all([
-      this.loadFile(this.jpUrl),
-      this.loadFile(this.zhUrl)
-    ]);
+    try {
+      const response = await fetch(this.dataUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      if (!Array.isArray(data)) throw new Error('novel_data.json 顶层应为数组');
+      this.render(data);
+    } catch (error) {
+      console.error('NovelLoader: 加载/解析 novel_data.json 失败', error);
+      this.elements.jpContainer.innerHTML =
+        '<p class="empty-text">【日本語の小説テキストをここに入力してください】</p>';
+      this.elements.zhContainer.innerHTML =
+        '<p class="empty-text">【请在此输入中文小说文本】</p>';
+    }
 
-    // 设置内容
-    this.elements.jpContainer.innerHTML = jpResult.success 
-      ? this.formatNovelText(jpResult.content, 'jp')
-      : '<p class="empty-text">【日本語の小説テキストをここに入力してください】</p>';
-
-    this.elements.zhContainer.innerHTML = zhResult.success 
-      ? this.formatNovelText(zhResult.content, 'zh')
-      : '<p class="empty-text">【请在此输入中文小说文本】</p>';
-
-    // 触发回调
     if (typeof this.onLoadComplete === 'function') {
       setTimeout(this.onLoadComplete, 100);
     }
   }
 
-  async loadFile(url) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) {
-        const content = await response.text();
-        return { success: true, content };
-      }
-      return { success: false, error: 'HTTP error' };
-    } catch (error) {
-      console.error(`Failed to load ${url}:`, error);
-      return { success: false, error: error.message };
-    }
+  render(data) {
+    const jpHtml = data.map(entry => this.renderParagraph(entry.id, entry.jp)).join('');
+    const zhHtml = data.map(entry => this.renderParagraph(entry.id, entry.zh)).join('');
+    this.elements.jpContainer.innerHTML = jpHtml;
+    this.elements.zhContainer.innerHTML = zhHtml;
   }
 
-  formatNovelText(text, lang) {
-    const paragraphs = text.split('\n');
-    return paragraphs.map((p, i) => {
-      const trimmedText = p.trim();
-      if (!trimmedText) {
-        return `<p class="novel-paragraph empty" data-index="${i}" data-serial="" data-lang="${lang}">&nbsp;</p>`;
-      }
-      const serialMatch = trimmedText.match(/^([\d]+)[.、:：]\s*/);
-      const serial = serialMatch ? serialMatch[1] : '';
-      const cleanedText = serialMatch ? trimmedText.replace(serialMatch[0], '') : trimmedText;
-      return `<p class="novel-paragraph" data-index="${i}" data-serial="${serial}" data-lang="${lang}">${cleanedText}</p>`;
-    }).join('');
+  // 每个 entry 渲染成一个 <p class="novel-paragraph" data-id="N">
+  // 文本中的 '\n' 用 <br> 渲染——保留多句合并/拆分场景下的阅读节奏，
+  // 同时让 .novel-paragraph 仍是单个 <p>，不破坏既有 .novel-content p 样式。
+  renderParagraph(id, text) {
+    const safeId = String(id);
+    const raw = (text == null) ? '' : String(text);
+    const body = raw
+      .split('\n')
+      .map(line => Utils.escapeHtml(line))
+      .join('<br>');
+    return `<p class="novel-paragraph" data-id="${safeId}">${body}</p>`;
   }
 }
 
-// ===== 小说同步控制器 =====
+// ===== 小说同步控制器（按 data-id 1:1 映射） =====
+//
+// 数据已经在构建期（novel_data.json）做过语义对齐，每条 entry 都有唯一的 id，
+// 中日两栏渲染时把 id 写到 .novel-paragraph[data-id]。
+// 所以这里的匹配退化为最简单的形态：两张 id -> element 的 Map，O(1) 直查。
+// 不再有任何启发式（pidx/serial/Block）逻辑。
 class NovelSyncController {
   constructor() {
     this.elements = {
       jpContainer: document.getElementById('novelJapanese'),
-      zhContainer: document.getElementById('novelChinese')
+      zhContainer: document.getElementById('novelChinese'),
+      novelWrapper: document.querySelector('.novel-container'),
+      nav: document.querySelector('.nav')
     };
-    this.jpSerialMap = new Map();
-    this.zhSerialMap = new Map();
+    // id(string) -> 段落元素
+    this.jpById = new Map();
+    this.zhById = new Map();
+    // 用于事件委托时去抖，避免在同一段落内移动鼠标反复触发滚动/高亮
+    this._lastHoverP = null;
   }
 
   init() {
@@ -985,83 +991,134 @@ class NovelSyncController {
   }
 
   setupMappings() {
-    const jpParagraphs = this.elements.jpContainer.querySelectorAll('.novel-paragraph');
-    const zhParagraphs = this.elements.zhContainer.querySelectorAll('.novel-paragraph');
-
-    this.jpSerialMap.clear();
-    this.zhSerialMap.clear();
-
-    jpParagraphs.forEach(p => {
-      const serial = p.dataset.serial;
-      if (serial) {
-        this.jpSerialMap.set(serial, p);
-      }
+    this.jpById.clear();
+    this.zhById.clear();
+    this.elements.jpContainer.querySelectorAll('.novel-paragraph[data-id]').forEach(p => {
+      this.jpById.set(p.dataset.id, p);
+    });
+    this.elements.zhContainer.querySelectorAll('.novel-paragraph[data-id]').forEach(p => {
+      this.zhById.set(p.dataset.id, p);
     });
 
-    zhParagraphs.forEach(p => {
-      const serial = p.dataset.serial;
-      if (serial) {
-        this.zhSerialMap.set(serial, p);
-      }
-    });
+    if (this.jpById.size !== this.zhById.size) {
+      console.warn(
+        `NovelSyncController: 中日段落数不一致（JP=${this.jpById.size}, ZH=${this.zhById.size}），` +
+        '请检查 novel_data.json 是否完整。'
+      );
+    }
+  }
+
+  // 绝对 1:1：同 id 在另一侧必然存在（由构建期保证），不存在则返回 null。
+  findCounterpart(sourceP, isJp) {
+    const id = sourceP.dataset.id;
+    if (!id) return null;
+    return (isJp ? this.zhById : this.jpById).get(id) || null;
   }
 
   highlightPair(sourceP, isJp) {
-    // 移除所有高亮
-    document.querySelectorAll('.novel-paragraph.highlighted').forEach(p => {
-      p.classList.remove('highlighted');
-    });
+    this.clearHighlights();
+    if (!sourceP || sourceP.classList.contains('empty')) return;
 
-    const sourceSerial = sourceP.dataset.serial;
-    const targetSerialMap = isJp ? this.zhSerialMap : this.jpSerialMap;
+    sourceP.classList.add('highlighted');
+
+    const targetP = this.findCounterpart(sourceP, isJp);
+    if (!targetP || targetP.classList.contains('empty')) return;
+
+    targetP.classList.add('highlighted');
+
     const targetContainer = isJp ? this.elements.zhContainer : this.elements.jpContainer;
+    this.scrollContainerToParagraph(targetContainer, targetP);
+    this.ensureColumnVisible(targetContainer);
+  }
 
-    // 高亮当前段落（非空行）
-    if (!sourceP.classList.contains('empty') && sourceSerial) {
-      sourceP.classList.add('highlighted');
+  // 用 getBoundingClientRect 计算段落相对于容器内部的真实偏移。
+  // 之前用 targetP.offsetTop 的写法存在 bug：offsetTop 是相对于 offsetParent 的，
+  // 而 .novel-content / .novel-column / .novel-container 等祖先都没有 position 定位，
+  // offsetParent 会一路走到 <body>，于是得到的值是该段落距页面顶端几千像素，
+  // 把这个值喂给容器自身的 scrollTo 会被钳到 scrollHeight 末尾，看上去就是"滚到最底/位置乱跳"。
+  scrollContainerToParagraph(container, paragraphEl) {
+    const containerRect = container.getBoundingClientRect();
+    const paragraphRect = paragraphEl.getBoundingClientRect();
+    // 段落顶端 相对 容器内容区顶端 的距离（再叠加容器当前已滚动量，得到目标 scrollTop）
+    const relativeTop = paragraphRect.top - containerRect.top + container.scrollTop;
+    // 让目标段落落在容器视口的上 1/3 处
+    const desired = relativeTop - container.clientHeight / 3;
+    container.scrollTo({ top: Math.max(0, desired), behavior: 'smooth' });
+  }
+
+  // fixed 悬浮导航栏的底边坐标（页面坐标系）。clamp() 让 nav 高度会随视口变化，
+  // 这里实时取，不缓存。
+  getNavBottom() {
+    const nav = this.elements.nav || document.querySelector('.nav');
+    if (!nav) return 0;
+    const rect = nav.getBoundingClientRect();
+    return Math.max(0, rect.bottom);
+  }
+
+  // 目标列若被 nav 遮住，或整列已位于视口下方（手机端两列堆叠时常见），
+  // 用 window.scrollBy 把页面挪一下，让目标列处于 nav 下方的可视区。
+  ensureColumnVisible(container) {
+    const rect = container.getBoundingClientRect();
+    const navBottom = this.getNavBottom();
+    const gap = 12;
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+
+    let pageDelta = 0;
+    if (rect.top < navBottom + gap) {
+      // 顶端被 nav 压住 -> 把页面往下卷，使容器顶端落在 nav 下方
+      pageDelta = rect.top - (navBottom + gap);
+    } else if (rect.top > vh - 80) {
+      // 容器几乎在视口外（在屏幕下方）-> 把页面往上卷
+      pageDelta = rect.top - (navBottom + gap);
     }
-
-    // 使用序号查找对应的目标段落
-    if (sourceSerial && targetSerialMap.has(sourceSerial)) {
-      const targetP = targetSerialMap.get(sourceSerial);
-      if (!targetP.classList.contains('empty')) {
-        targetP.classList.add('highlighted');
-      }
-
-      // 滚动到对应位置
-      const containerHeight = targetContainer.clientHeight;
-      const targetTop = targetP.offsetTop;
-      const scrollTarget = Math.max(0, targetTop - containerHeight / 3);
-
-      targetContainer.scrollTo({
-        top: scrollTarget,
-        behavior: 'smooth'
-      });
+    if (pageDelta !== 0) {
+      window.scrollBy({ top: pageDelta, behavior: 'smooth' });
     }
   }
 
+  clearHighlights() {
+    document.querySelectorAll('.novel-paragraph.highlighted').forEach(p => {
+      p.classList.remove('highlighted');
+    });
+  }
+
+  // 事件委托：监听挂在 .novel-content 容器上，
+  // 不论 e.target 是段落本身、JSON 中 \n 渲染出的 <br>、文本节点，
+  // 还是日后可能加入的 <span class="ruby"> 等子元素，
+  // 都通过 closest('.novel-paragraph') 向上找到带 data-id 的段落容器，再做匹配。
   setupEventListeners() {
-    // 为日语段落添加事件监听
-    this.elements.jpContainer.querySelectorAll('.novel-paragraph').forEach(p => {
-      p.addEventListener('mouseenter', () => this.highlightPair(p, true));
-    });
+    const bind = (container, isJp) => {
+      // mouseover 会冒泡（mouseenter 不冒泡，不能配合委托使用）
+      container.addEventListener('mouseover', (e) => {
+        const p = e.target.closest && e.target.closest('.novel-paragraph');
+        if (!p || !container.contains(p) || p.classList.contains('empty')) return;
+        if (this._lastHoverP === p) return;   // 在同一段落里的子节点之间移动时跳过
+        this._lastHoverP = p;
+        this.highlightPair(p, isJp);
+      });
 
-    // 为中文段落添加事件监听
-    this.elements.zhContainer.querySelectorAll('.novel-paragraph').forEach(p => {
-      p.addEventListener('mouseenter', () => this.highlightPair(p, false));
-    });
+      container.addEventListener('click', (e) => {
+        const p = e.target.closest && e.target.closest('.novel-paragraph');
+        if (!p || !container.contains(p) || p.classList.contains('empty')) return;
+        this.highlightPair(p, isJp);
+      });
 
-    // 鼠标离开时移除所有高亮
-    document.addEventListener('mouseleave', (e) => {
-      const target = e.target;
-      if (target && target.classList && 
-          !target.classList.contains('novel-paragraph') && 
-          !(target.closest && target.closest('.novel-content'))) {
-        document.querySelectorAll('.novel-paragraph.highlighted').forEach(hp => {
-          hp.classList.remove('highlighted');
-        });
-      }
-    }, true);
+      container.addEventListener('touchstart', (e) => {
+        const p = e.target.closest && e.target.closest('.novel-paragraph');
+        if (!p || !container.contains(p) || p.classList.contains('empty')) return;
+        this.highlightPair(p, isJp);
+      }, { passive: true });
+    };
+    bind(this.elements.jpContainer, true);
+    bind(this.elements.zhContainer, false);
+
+    // mouseleave 不冒泡，原先挂在 document 上几乎不会触发；改挂在 .novel-container 上。
+    if (this.elements.novelWrapper) {
+      this.elements.novelWrapper.addEventListener('mouseleave', () => {
+        this.clearHighlights();
+        this._lastHoverP = null;
+      });
+    }
   }
 }
 
@@ -1287,6 +1344,148 @@ class TimelineImageViewer {
   }
 }
 
+// ===== 视频弹窗控制器 =====
+class VideoModalController {
+  constructor() {
+    this.overlay = document.getElementById('videoModalOverlay');
+    this.modal = this.overlay ? this.overlay.querySelector('.video-modal') : null;
+    this.iframe = document.getElementById('videoModalPlayer');
+    this.descEl = document.getElementById('videoModalDesc');
+    this.closeBtn = this.overlay ? this.overlay.querySelector('.video-modal-close') : null;
+    this.cards = document.querySelectorAll('.video-card');
+    this._keydownHandler = null;
+    this.init();
+  }
+
+  init() {
+    if (!this.overlay || !this.iframe || !this.closeBtn) {
+      console.warn('VideoModalController: 缺少必要的DOM元素');
+      return;
+    }
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    this.cards.forEach(card => {
+      card.addEventListener('click', () => {
+        this.open({
+          title: card.dataset.title || '',
+          url: card.dataset.url || '',
+          desc: card.dataset.desc || ''
+        });
+      });
+    });
+
+    this.closeBtn.addEventListener('click', () => this.close());
+
+    // 点击遮罩关闭（不响应弹窗内点击）
+    this.overlay.addEventListener('click', (e) => {
+      if (e.target === this.overlay) this.close();
+    });
+
+    // ESC 关闭
+    this._keydownHandler = (e) => {
+      if (e.key === 'Escape' && this.overlay.classList.contains('active')) {
+        this.close();
+      }
+    };
+    document.addEventListener('keydown', this._keydownHandler);
+  }
+
+  open({ title, url, desc }) {
+    const embedSrc = this.buildEmbedSrc(url);
+    this.iframe.src = embedSrc;
+    if (this.descEl) {
+      this.descEl.textContent = desc || title || '';
+    }
+    this.overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  close() {
+    this.overlay.classList.remove('active');
+    // 关键：清空 iframe.src 停止后台播放与发声
+    this.iframe.src = '';
+    document.body.style.overflow = '';
+  }
+
+  buildEmbedSrc(url) {
+    const match = url && url.match(/BV[a-zA-Z0-9]+/);
+    if (match) {
+      return `//player.bilibili.com/player.html?bvid=${match[0]}&autoplay=0&high_quality=1&danmaku=0`;
+    }
+    return url || '';
+  }
+
+  destroy() {
+    if (this._keydownHandler) {
+      document.removeEventListener('keydown', this._keydownHandler);
+    }
+    this.overlay = null;
+    this.iframe = null;
+    this.closeBtn = null;
+    this.cards = null;
+  }
+}
+
+// ===== 头像图片切换器 =====
+class PortraitGallery {
+  constructor(options = {}) {
+    this.images = options.images || [];
+    this.wrap = document.getElementById('portraitPhotoWrap');
+    this.activePhoto = document.getElementById('mainPhoto');
+    this.hiddenPhoto = document.getElementById('photoNext');
+    this.currentIndex = 0;
+    this._isAnimating = false;
+    this.init();
+  }
+
+  init() {
+    if (!this.wrap || !this.activePhoto || !this.hiddenPhoto || this.images.length === 0) {
+      console.warn('PortraitGallery: 缺少必要的DOM元素或图片列表为空');
+      return;
+    }
+    // 同步初始 src 到 activePhoto，避免与首张不一致
+    if (this.images[0]) {
+      this.activePhoto.src = this.images[0];
+    }
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    this.wrap.addEventListener('click', () => this.next());
+  }
+
+  next() {
+    if (this._isAnimating) return;
+    this._isAnimating = true;
+
+    this.currentIndex = (this.currentIndex + 1) % this.images.length;
+    const nextSrc = this.images[this.currentIndex];
+
+    this.hiddenPhoto.src = nextSrc;
+    // 交叉淡入：把隐藏图淡入，把当前图淡出
+    this.hiddenPhoto.classList.remove('photo-next');
+    this.activePhoto.classList.add('photo-next');
+
+    // 交换引用，下一次点击时角色互换
+    const swap = this.activePhoto;
+    this.activePhoto = this.hiddenPhoto;
+    this.hiddenPhoto = swap;
+
+    // CSS 中 opacity transition 为 1s
+    window.setTimeout(() => {
+      this._isAnimating = false;
+    }, 1000);
+  }
+
+  destroy() {
+    this.wrap = null;
+    this.activePhoto = null;
+    this.hiddenPhoto = null;
+  }
+}
+
 // ===== 页面初始化 =====
 document.addEventListener('DOMContentLoaded', async () => {
   // 加载小说内容并设置同步
@@ -1303,4 +1502,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 初始化时间线图片查看器
   const timelineImageViewer = new TimelineImageViewer();
+
+  // 初始化视频弹窗
+  const videoModalController = new VideoModalController();
+
+  // 初始化头像切图
+  const portraitGallery = new PortraitGallery({
+    images: [
+      './assets/images/mainPicture1.webp',
+      './assets/images/mainPicture2.webp',
+      './assets/images/mainPicture3.webp',
+      './assets/images/mainPicture4.webp',
+      './assets/images/mainPicture5.webp'
+    ]
+  });
 });
