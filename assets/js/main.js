@@ -251,8 +251,8 @@ class ImageSlider {
 // 初始化图片轮播
 const imageSlider = new ImageSlider({
   autoPlay: true,
-  autoPlayInterval: 5000,
-  transitionDuration: 1000
+  autoPlayInterval: 3000,
+  transitionDuration: 800
 });
 
 // ===== 导航控制器 =====
@@ -342,10 +342,12 @@ class DanmakuManager {
   constructor(options = {}) {
     this.container = document.getElementById('danmakuContainer');
     this.danmakus = new Set();
-    this.animationData = new WeakMap();
     this.minDuration = options.minDuration || 10;
     this.maxDuration = options.maxDuration || 16;
-    this.maxTopPosition = options.maxTopPosition || 50;
+    // 轨道系统 — 固定 6 条轨道，均匀分布
+    this.trackCount = 6;
+    this.trackTops = [8, 16, 24, 32, 40, 48]; // 6 条轨道的 top % 值
+    this.nextTrack = 0;
     this.init();
   }
 
@@ -354,13 +356,6 @@ class DanmakuManager {
       console.warn('DanmakuManager: 缺少必要的DOM元素');
       return;
     }
-    this.initEventListeners();
-  }
-
-  initEventListeners() {
-    // 使用事件委托，只在容器上绑定一次
-    this.container.addEventListener('mouseenter', this.handleMouseEnter.bind(this), true);
-    this.container.addEventListener('mouseleave', this.handleMouseLeave.bind(this), true);
   }
 
   createDanmaku(name, text) {
@@ -369,33 +364,24 @@ class DanmakuManager {
     const el = document.createElement('div');
     el.className = 'danmaku-item';
     
-    // 使用统一的工具函数进行HTML转义
     const escapedName = Utils.escapeHtml(name);
     const escapedText = Utils.escapeHtml(text);
     
     el.innerHTML = `<span class="danmaku-name">${escapedName}</span><span class="danmaku-text">| ${escapedText}</span>`;
-    el.style.top = `${Math.random() * this.maxTopPosition}vh`;
+    
+    // 轨道分配：轮转，保证弹幕均匀分布在 6 条轨道上
+    el.style.top = `${this.trackTops[this.nextTrack % this.trackCount]}vh`;
+    this.nextTrack++;
+    
+    // 弹幕动画时长随机
     el.style.animationDuration = `${this.minDuration + Math.random() * (this.maxDuration - this.minDuration)}s`;
-    
-    const animationDuration = parseFloat(el.style.animationDuration);
-    
-    // 存储动画状态数据
-    this.animationData.set(el, {
-      animationDuration: animationDuration,
-      isPaused: false,
-      pauseStartTime: 0,
-      totalPausedDuration: 0,
-      animationStartTime: performance.now()
-    });
     
     this.danmakus.add(el);
     this.container.appendChild(el);
     
-    // 设置自动销毁
-    const totalTime = animationDuration * 1000 + 2000;
-    setTimeout(() => {
+    el.addEventListener('animationend', () => {
       this.removeDanmaku(el);
-    }, totalTime);
+    });
     
     return el;
   }
@@ -403,50 +389,19 @@ class DanmakuManager {
   removeDanmaku(el) {
     if (this.danmakus.has(el)) {
       this.danmakus.delete(el);
-      this.animationData.delete(el);
       el.remove();
-    }
-  }
-
-  handleMouseEnter(e) {
-    const target = e.target.closest('.danmaku-item');
-    if (!target || !this.danmakus.has(target)) return;
-    
-    const data = this.animationData.get(target);
-    if (data && !data.isPaused) {
-      data.isPaused = true;
-      data.pauseStartTime = performance.now();
-      target.style.animationPlayState = 'paused';
-    }
-  }
-
-  handleMouseLeave(e) {
-    const target = e.target.closest('.danmaku-item');
-    if (!target || !this.danmakus.has(target)) return;
-    
-    const data = this.animationData.get(target);
-    if (data && data.isPaused) {
-      data.isPaused = false;
-      data.totalPausedDuration += performance.now() - data.pauseStartTime;
-      const elapsed = performance.now() - data.animationStartTime - data.totalPausedDuration;
-      const progress = Math.min(elapsed / (data.animationDuration * 1000), 1);
-      target.style.animationDuration = data.animationDuration + 's';
-      target.style.animationDelay = -progress * data.animationDuration + 's';
-      target.style.animationPlayState = 'running';
     }
   }
 
   destroy() {
     this.danmakus.forEach(el => el.remove());
     this.danmakus.clear();
-    this.animationData = new WeakMap();
-    this.container.removeEventListener('mouseenter', this.handleMouseEnter, true);
-    this.container.removeEventListener('mouseleave', this.handleMouseLeave, true);
   }
 }
 
-// 弹幕数据
+// 弹幕数据（留言板示例数据）
 const sampleDanmaku = [
+  { name: '【曦月】', text: '【ここにご自身のメッセージを入力してください】' },
   { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
   { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
   { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
@@ -465,16 +420,82 @@ const sampleDanmaku = [
 ];
 
 // 初始化弹幕管理器
-const danmakuManager = new DanmakuManager();
+const danmakuManager = new DanmakuManager({
+  minDuration: 16,  // 最小 16 秒（原来是 10）
+  maxDuration: 24   // 最大 24 秒（原来是 16）
+});
 
-// ===== 留言板渲染器 =====
+// ===== 留言板渲染器（支持分页）=====
 class MessageBoardRenderer {
   constructor(data) {
-    this.data = data || [];
+    this.data = this.sanitizeData(data) || [];
+    this.currentPage = 1;
+    this.itemsPerPage = 8;
+    this.elements = null;
+    this._prevPageHandler = null;
+    this._nextPageHandler = null;
+    
+    // 卡片背景色选项（马卡龙色系）
+    this.cardColors = [
+      '#FFE6ED',   // 浅粉色
+      '#FFF3E0',   // 浅橙色/米色
+      '#E3F2FD',   // 浅蓝色
+      '#FCE4EC',   // 淡粉色
+      '#E8F5E9',   // 浅绿色
+      '#F3E5F5',   // 浅紫色
+      '#FFF8E1',   // 浅黄色
+      '#E0F7FA',   // 青色
+    ];
+    
+    // 延迟初始化，确保DOM加载完成
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => this.init());
+    } else {
+      this.init();
+    }
+  }
+
+  // 数据清理和XSS防护
+  sanitizeData(data) {
+    if (!Array.isArray(data)) return [];
+    return data.map(item => ({
+      name: item.name ? Utils.escapeHtml(String(item.name)) : '匿名',
+      text: item.text ? Utils.escapeHtml(String(item.text)) : ''
+    }));
+  }
+
+  init() {
     this.elements = {
       container: document.getElementById('messagesContainer'),
-      count: document.getElementById('messagesCount')
+      stats: document.getElementById('messagesStats'),
+      pagination: document.getElementById('pagination'),
+      paginationPrev: document.getElementById('paginationPrev'),
+      paginationNext: document.getElementById('paginationNext'),
+      paginationNumbers: document.getElementById('paginationNumbers')
     };
+    
+    // 绑定分页按钮事件
+    this._prevPageHandler = () => this.prevPage();
+    this._nextPageHandler = () => this.nextPage();
+    
+    if (this.elements.paginationPrev) {
+      this.elements.paginationPrev.addEventListener('click', this._prevPageHandler);
+    }
+    if (this.elements.paginationNext) {
+      this.elements.paginationNext.addEventListener('click', this._nextPageHandler);
+    }
+    
+    this.render();
+  }
+
+  getTotalPages() {
+    return Math.ceil(this.data.length / this.itemsPerPage);
+  }
+
+  getCurrentPageData() {
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return this.data.slice(start, end);
   }
 
   render() {
@@ -483,19 +504,42 @@ class MessageBoardRenderer {
       return;
     }
 
-    // 更新留言数量
-    if (this.elements.count) {
-      this.elements.count.textContent = this.data.length + ' 件';
+    // 更新统计信息（使用DOM方法）
+    if (this.elements.stats) {
+      const totalPages = this.getTotalPages();
+      this.elements.stats.innerHTML = '';
+      
+      const totalText = document.createTextNode(`共 `);
+      const totalSpan = document.createElement('span');
+      totalSpan.textContent = this.data.length;
+      const text1 = document.createTextNode(` 条留言 · 第 `);
+      const pageSpan = document.createElement('span');
+      pageSpan.textContent = this.currentPage;
+      const text2 = document.createTextNode(` / ${totalPages} 页`);
+      
+      this.elements.stats.appendChild(totalText);
+      this.elements.stats.appendChild(totalSpan);
+      this.elements.stats.appendChild(text1);
+      this.elements.stats.appendChild(pageSpan);
+      this.elements.stats.appendChild(text2);
     }
 
     // 清空容器
-    this.elements.container.innerHTML = '';
+    while (this.elements.container.firstChild) {
+      this.elements.container.removeChild(this.elements.container.firstChild);
+    }
+
+    // 获取当前页数据
+    const pageData = this.getCurrentPageData();
 
     // 遍历数据，创建留言卡片
-    this.data.forEach((item, index) => {
+    pageData.forEach((item, index) => {
       const card = this.createCard(item, index);
       this.elements.container.appendChild(card);
     });
+
+    // 渲染分页控件
+    this.renderPagination();
   }
 
   createCard(item, index) {
@@ -503,108 +547,160 @@ class MessageBoardRenderer {
     card.className = 'message-card';
     card.style.animationDelay = `${index * 0.1}s`;
 
-    // 获取名字首字母作为头像显示（使用XSS防护）
-    const firstChar = Utils.escapeHtml(item.name.charAt(0));
-    const escapedName = Utils.escapeHtml(item.name);
-    const escapedText = Utils.escapeHtml(item.text);
-    const randomTime = this.getRandomTime();
+    // 添加随机背景色（马卡龙色系）
+    const colorIndex = index % this.cardColors.length;
+    card.style.background = this.cardColors[colorIndex];
 
-    card.innerHTML = `
-      <div class="message-header-inner">
-        <div class="message-avatar">${firstChar}</div>
-        <p class="message-sender">${escapedName}</p>
-      </div>
-      <p class="message-text">${escapedText}</p>
-      <div class="message-time">${randomTime}</div>
-    `;
+    // 微倾斜（±1.2度）—— 真实便签贴歪一点但不会太大
+    const randomRotation = (Math.random() * 2.4 - 1.2).toFixed(2);
+    card.style.setProperty('--tilt', `${randomRotation}deg`);
+
+    // 使用DOM方法创建元素，避免innerHTML的XSS风险
+    const tape = document.createElement('span');
+    tape.className = 'message-tape';
+    
+    const content = document.createElement('div');
+    content.className = 'message-content';
+    
+    const textPara = document.createElement('p');
+    textPara.className = 'message-text';
+    textPara.textContent = item.text; // 使用textContent防止XSS
+    content.appendChild(textPara);
+    
+    const footer = document.createElement('div');
+    footer.className = 'message-footer';
+    
+    const author = document.createElement('span');
+    author.className = 'message-author';
+    author.textContent = `— ${item.name}`; // 使用textContent防止XSS
+    footer.appendChild(author);
+    
+    card.appendChild(tape);
+    card.appendChild(content);
+    card.appendChild(footer);
+
+    // 鼠标悬浮效果 - 使用CSS类实现平滑过渡
+    card.addEventListener('mouseenter', () => {
+      card.classList.add('message-card-hover');
+    });
+
+    card.addEventListener('mouseleave', () => {
+      card.classList.remove('message-card-hover');
+    });
 
     return card;
   }
 
-  getRandomTime() {
-    const hours = Math.floor(Math.random() * 24);
-    const mins = Math.floor(Math.random() * 60);
-    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-  }
-}
+  renderPagination() {
+    if (!this.elements.paginationNumbers) return;
 
-// ===== 弹幕发送器 =====
-class DanmakuSender {
-  constructor(options = {}) {
-    this.defaultName = options.defaultName || '匿名艦長';
-    this.placeholder = options.placeholder || 'コメントを入力してください';
-    this.elements = {
-      nameInput: document.getElementById('danmakuName'),
-      textInput: document.getElementById('danmakuText'),
-      sendBtn: document.getElementById('danmakuSend'),
-      messagesBox: document.getElementById('messagesBox')
-    };
-    this.init();
-  }
+    const totalPages = this.getTotalPages();
+    this.elements.paginationNumbers.innerHTML = '';
 
-  init() {
-    if (!this.elements.textInput) {
-      console.warn('DanmakuSender: 缺少必要的DOM元素');
-      return;
-    }
-    this.setupEventListeners();
-  }
-
-  setupEventListeners() {
-    // 回车发送
-    this.elements.textInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        this.send();
+    // 隐藏分页如果只有一页
+    if (totalPages <= 1) {
+      if (this.elements.pagination) {
+        this.elements.pagination.style.display = 'none';
       }
-    });
-
-    // 按钮点击发送
-    if (this.elements.sendBtn) {
-      this.elements.sendBtn.addEventListener('click', () => this.send());
-    }
-  }
-
-  send() {
-    const name = this.elements.nameInput?.value.trim() || this.defaultName;
-    const text = this.elements.textInput.value.trim();
-
-    if (!text) {
-      alert(this.placeholder);
       return;
+    } else {
+      if (this.elements.pagination) {
+        this.elements.pagination.style.display = 'flex';
+      }
     }
 
-    // 使用弹幕管理器创建弹幕
-    danmakuManager.createDanmaku(name, text);
-
-    // 添加到留言列表
-    this.addToMessagesBox(name, text);
-
-    // 清空输入
-    if (this.elements.nameInput) {
-      this.elements.nameInput.value = '';
+    // 更新按钮状态
+    if (this.elements.paginationPrev) {
+      this.elements.paginationPrev.disabled = this.currentPage === 1;
     }
-    this.elements.textInput.value = '';
+    if (this.elements.paginationNext) {
+      this.elements.paginationNext.disabled = this.currentPage === totalPages;
+    }
+
+    // 生成页码按钮（最多显示7个）
+    let startPage = Math.max(1, this.currentPage - 3);
+    let endPage = Math.min(totalPages, this.currentPage + 3);
+
+    // 如果总页数少于7，显示全部
+    if (totalPages <= 7) {
+      startPage = 1;
+      endPage = totalPages;
+    }
+
+    // 添加省略号
+    if (startPage > 1) {
+      this.addPageNumber(1);
+      if (startPage > 2) {
+        this.addDots();
+      }
+    }
+
+    // 添加页码
+    for (let i = startPage; i <= endPage; i++) {
+      this.addPageNumber(i);
+    }
+
+    // 添加省略号
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        this.addDots();
+      }
+      this.addPageNumber(totalPages);
+    }
   }
 
-  addToMessagesBox(name, text) {
-    if (!this.elements.messagesBox) return;
+  addPageNumber(page) {
+    const button = document.createElement('button');
+    button.className = 'pagination-number' + (page === this.currentPage ? ' active' : '');
+    button.textContent = page;
+    button.addEventListener('click', () => this.goToPage(page));
+    this.elements.paginationNumbers.appendChild(button);
+  }
 
-    const messageItem = document.createElement('div');
-    messageItem.className = 'message-item';
-    
-    // 使用统一的XSS防护
-    const escapedName = Utils.escapeHtml(name);
-    const escapedText = Utils.escapeHtml(text);
-    
-    messageItem.innerHTML = `
-      <p class="message-sender">${escapedName}</p>
-      <p class="message-text">${escapedText}</p>
-    `;
-    
-    this.elements.messagesBox.prepend(messageItem);
-    this.elements.messagesBox.scrollTop = 0;
+  addDots() {
+    const dots = document.createElement('span');
+    dots.className = 'pagination-dots';
+    dots.textContent = '...';
+    this.elements.paginationNumbers.appendChild(dots);
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.render();
+    }
+  }
+
+  nextPage() {
+    if (this.currentPage < this.getTotalPages()) {
+      this.currentPage++;
+      this.render();
+    }
+  }
+
+  goToPage(page) {
+    if (page >= 1 && page <= this.getTotalPages() && page !== this.currentPage) {
+      this.currentPage = page;
+      this.render();
+    }
+  }
+
+  destroy() {
+    if (this.elements.paginationPrev && this._prevPageHandler) {
+      this.elements.paginationPrev.removeEventListener('click', this._prevPageHandler);
+    }
+    if (this.elements.paginationNext && this._nextPageHandler) {
+      this.elements.paginationNext.removeEventListener('click', this._nextPageHandler);
+    }
+    this.elements = null;
+    this._prevPageHandler = null;
+    this._nextPageHandler = null;
   }
 }
+
+// ===== 弹幕发送器（已移除）=====
+// 由于项目中没有弹幕发送表单，此类已删除
+// 如需添加弹幕发送功能，请添加相应的HTML表单元素并恢复此类
 
 // ===== 弹幕自动播放器 =====
 class DanmakuAutoPlayer {
@@ -612,29 +708,37 @@ class DanmakuAutoPlayer {
     this.manager = manager;
     this.data = data || [];
     this.interval = options.interval || 3000;
-    this.currentIndex = 0;
+    this.startDelay = null;
     this.intervalId = null;
   }
 
   start() {
-    if (this.intervalId) return;
+    if (this.intervalId || this.startDelay) return;
     if (this.data.length === 0) return;
 
-    // 立即发送第一条
-    this.sendNext();
-
-    this.intervalId = setInterval(() => {
+    // 首次延迟 800ms，然后开始密集发射
+    this.startDelay = setTimeout(() => {
+      this.startDelay = null;
       this.sendNext();
-    }, this.interval);
+
+      this.intervalId = setInterval(() => {
+        this.sendNext();
+      }, this.interval);
+    }, 800);
   }
 
   sendNext() {
-    const item = this.data[this.currentIndex];
+    // 随机选取一条弹幕数据
+    const randomIndex = Math.floor(Math.random() * this.data.length);
+    const item = this.data[randomIndex];
     this.manager.createDanmaku(item.name, item.text);
-    this.currentIndex = (this.currentIndex + 1) % this.data.length;
   }
 
   stop() {
+    if (this.startDelay) {
+      clearTimeout(this.startDelay);
+      this.startDelay = null;
+    }
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
@@ -648,17 +752,15 @@ class DanmakuAutoPlayer {
   }
 }
 
-// 初始化弹幕发送器
-// 仅当 HTML 中存在发送弹幕的输入区时才初始化，避免在该功能尚未实现时打出 warn
-const danmakuSender = document.getElementById('danmakuText') ? new DanmakuSender() : null;
+// 弹幕发送器（已移除）
+// 如需添加弹幕发送功能，请先添加相应的HTML表单元素，然后恢复DanmakuSender类
 
 // 初始化弹幕自动播放器
-const danmakuAutoPlayer = new DanmakuAutoPlayer(danmakuManager, sampleDanmaku, { interval: 3000 });
+const danmakuAutoPlayer = new DanmakuAutoPlayer(danmakuManager, sampleDanmaku, { interval: 2500 });
 danmakuAutoPlayer.start();
 
 // 渲染留言板
 const messageBoardRenderer = new MessageBoardRenderer(sampleDanmaku);
-messageBoardRenderer.render();
 
 // ===== 音乐播放器 =====
 class MusicPlayer {
@@ -684,7 +786,8 @@ class MusicPlayer {
   }
 
   setupEventListeners() {
-    this.btn.addEventListener('click', () => this.toggle());
+    this._toggleHandler = () => this.toggle();
+    this.btn.addEventListener('click', this._toggleHandler);
   }
 
   toggle() {
@@ -710,10 +813,11 @@ class MusicPlayer {
   }
 
   destroy() {
-    this.btn.removeEventListener('click', this.toggle);
+    this.btn.removeEventListener('click', this._toggleHandler);
     this.audio.pause();
     this.audio = null;
     this.btn = null;
+    this._toggleHandler = null;
   }
 }
 
@@ -741,7 +845,8 @@ class DanmakuModeController {
       console.warn('DanmakuModeController: 缺少必要的DOM元素');
       return;
     }
-    this.btn.addEventListener('click', () => this.toggle());
+    this._toggleHandler = () => this.toggle();
+    this.btn.addEventListener('click', this._toggleHandler);
     this.applyMode(this.mode);
   }
 
@@ -774,10 +879,11 @@ class DanmakuModeController {
   }
 
   destroy() {
-    this.btn.removeEventListener('click', this.toggle);
+    this.btn.removeEventListener('click', this._toggleHandler);
     this.container = null;
     this.btn = null;
     this.badge = null;
+    this._toggleHandler = null;
   }
 }
 
@@ -878,7 +984,8 @@ class ScrollHintController {
   }
 
   setupEventListeners() {
-    window.addEventListener('scroll', () => this.update());
+    this._scrollHandler = () => this.update();
+    window.addEventListener('scroll', this._scrollHandler);
   }
 
   update() {
@@ -894,8 +1001,9 @@ class ScrollHintController {
   }
 
   destroy() {
-    window.removeEventListener('scroll', () => this.update());
+    window.removeEventListener('scroll', this._scrollHandler);
     this.hint = null;
+    this._scrollHandler = null;
   }
 }
 
@@ -1089,36 +1197,61 @@ class NovelSyncController {
   setupEventListeners() {
     const bind = (container, isJp) => {
       // mouseover 会冒泡（mouseenter 不冒泡，不能配合委托使用）
-      container.addEventListener('mouseover', (e) => {
+      const mouseoverHandler = (e) => {
         const p = e.target.closest && e.target.closest('.novel-paragraph');
         if (!p || !container.contains(p) || p.classList.contains('empty')) return;
         if (this._lastHoverP === p) return;   // 在同一段落里的子节点之间移动时跳过
         this._lastHoverP = p;
         this.highlightPair(p, isJp);
-      });
-
-      container.addEventListener('click', (e) => {
+      };
+      
+      const clickHandler = (e) => {
         const p = e.target.closest && e.target.closest('.novel-paragraph');
         if (!p || !container.contains(p) || p.classList.contains('empty')) return;
         this.highlightPair(p, isJp);
-      });
-
-      container.addEventListener('touchstart', (e) => {
+      };
+      
+      const touchstartHandler = (e) => {
         const p = e.target.closest && e.target.closest('.novel-paragraph');
         if (!p || !container.contains(p) || p.classList.contains('empty')) return;
         this.highlightPair(p, isJp);
-      }, { passive: true });
+      };
+
+      container.addEventListener('mouseover', mouseoverHandler);
+      container.addEventListener('click', clickHandler);
+      container.addEventListener('touchstart', touchstartHandler, { passive: true });
+
+      // 保存处理器引用以便清理
+      if (!this._eventHandlers) this._eventHandlers = [];
+      this._eventHandlers.push({ container, type: 'mouseover', handler: mouseoverHandler });
+      this._eventHandlers.push({ container, type: 'click', handler: clickHandler });
+      this._eventHandlers.push({ container, type: 'touchstart', handler: touchstartHandler });
     };
     bind(this.elements.jpContainer, true);
     bind(this.elements.zhContainer, false);
 
     // mouseleave 不冒泡，原先挂在 document 上几乎不会触发；改挂在 .novel-container 上。
     if (this.elements.novelWrapper) {
-      this.elements.novelWrapper.addEventListener('mouseleave', () => {
+      const mouseleaveHandler = () => {
         this.clearHighlights();
         this._lastHoverP = null;
-      });
+      };
+      this.elements.novelWrapper.addEventListener('mouseleave', mouseleaveHandler);
+      this._eventHandlers.push({ container: this.elements.novelWrapper, type: 'mouseleave', handler: mouseleaveHandler });
     }
+  }
+
+  destroy() {
+    if (this._eventHandlers) {
+      this._eventHandlers.forEach(({ container, type, handler }) => {
+        container.removeEventListener(type, handler);
+      });
+      this._eventHandlers = null;
+    }
+    this.jpById.clear();
+    this.zhById.clear();
+    this.elements = null;
+    this._lastHoverP = null;
   }
 }
 
@@ -1140,24 +1273,32 @@ class GiftModalController {
       return;
     }
 
+    this._eventHandlers = [];
+
     // 点击关闭按钮关闭弹窗
     if (this.closeBtn) {
-      this.closeBtn.addEventListener('click', () => this.close());
+      const closeBtnHandler = () => this.close();
+      this.closeBtn.addEventListener('click', closeBtnHandler);
+      this._eventHandlers.push({ element: this.closeBtn, type: 'click', handler: closeBtnHandler });
     }
 
     // 点击遮罩层关闭弹窗
-    this.overlay.addEventListener('click', (e) => {
+    const overlayClickHandler = (e) => {
       if (e.target === this.overlay) {
         this.close();
       }
-    });
+    };
+    this.overlay.addEventListener('click', overlayClickHandler);
+    this._eventHandlers.push({ element: this.overlay, type: 'click', handler: overlayClickHandler });
 
     // ESC键关闭弹窗
-    document.addEventListener('keydown', (e) => {
+    const keydownHandler = (e) => {
       if (e.key === 'Escape' && this.overlay.classList.contains('active')) {
         this.close();
       }
-    });
+    };
+    document.addEventListener('keydown', keydownHandler);
+    this._eventHandlers.push({ element: document, type: 'keydown', handler: keydownHandler });
 
     // 绑定礼物卡片点击事件
     this.bindGiftItemClick();
@@ -1165,15 +1306,43 @@ class GiftModalController {
 
   bindGiftItemClick() {
     const giftItems = document.querySelectorAll('.gift-item');
+    this._giftItemHandlers = [];
+    
     giftItems.forEach(item => {
-      item.addEventListener('click', () => {
+      const itemClickHandler = () => {
         const type = item.dataset.type;
         const url = item.dataset.url;
         const title = item.dataset.title || item.querySelector('.gift-title')?.textContent || this.defaultTitle;
         
         this.open(type, url, title);
-      });
+      };
+      item.addEventListener('click', itemClickHandler);
+      this._giftItemHandlers.push({ element: item, handler: itemClickHandler });
     });
+  }
+
+  destroy() {
+    // 清理事件监听器
+    if (this._eventHandlers) {
+      this._eventHandlers.forEach(({ element, type, handler }) => {
+        element.removeEventListener(type, handler);
+      });
+      this._eventHandlers = null;
+    }
+
+    // 清理礼物卡片事件监听器
+    if (this._giftItemHandlers) {
+      this._giftItemHandlers.forEach(({ element, handler }) => {
+        element.removeEventListener('click', handler);
+      });
+      this._giftItemHandlers = null;
+    }
+
+    this.overlay = null;
+    this.closeBtn = null;
+    this.content = null;
+    this.title = null;
+    this.desc = null;
   }
 
   open(type, url, title) {
@@ -1429,63 +1598,6 @@ class VideoModalController {
 }
 
 // ===== 头像图片切换器 =====
-class PortraitGallery {
-  constructor(options = {}) {
-    this.images = options.images || [];
-    this.wrap = document.getElementById('portraitPhotoWrap');
-    this.activePhoto = document.getElementById('mainPhoto');
-    this.hiddenPhoto = document.getElementById('photoNext');
-    this.currentIndex = 0;
-    this._isAnimating = false;
-    this.init();
-  }
-
-  init() {
-    if (!this.wrap || !this.activePhoto || !this.hiddenPhoto || this.images.length === 0) {
-      console.warn('PortraitGallery: 缺少必要的DOM元素或图片列表为空');
-      return;
-    }
-    // 同步初始 src 到 activePhoto，避免与首张不一致
-    if (this.images[0]) {
-      this.activePhoto.src = this.images[0];
-    }
-    this.setupEventListeners();
-  }
-
-  setupEventListeners() {
-    this.wrap.addEventListener('click', () => this.next());
-  }
-
-  next() {
-    if (this._isAnimating) return;
-    this._isAnimating = true;
-
-    this.currentIndex = (this.currentIndex + 1) % this.images.length;
-    const nextSrc = this.images[this.currentIndex];
-
-    this.hiddenPhoto.src = nextSrc;
-    // 交叉淡入：把隐藏图淡入，把当前图淡出
-    this.hiddenPhoto.classList.remove('photo-next');
-    this.activePhoto.classList.add('photo-next');
-
-    // 交换引用，下一次点击时角色互换
-    const swap = this.activePhoto;
-    this.activePhoto = this.hiddenPhoto;
-    this.hiddenPhoto = swap;
-
-    // CSS 中 opacity transition 为 1s
-    window.setTimeout(() => {
-      this._isAnimating = false;
-    }, 1000);
-  }
-
-  destroy() {
-    this.wrap = null;
-    this.activePhoto = null;
-    this.hiddenPhoto = null;
-  }
-}
-
 // ===== 页面初始化 =====
 document.addEventListener('DOMContentLoaded', async () => {
   // 加载小说内容并设置同步
@@ -1506,14 +1618,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 初始化视频弹窗
   const videoModalController = new VideoModalController();
 
-  // 初始化头像切图
-  const portraitGallery = new PortraitGallery({
-    images: [
-      './assets/images/mainPicture1.webp',
-      './assets/images/mainPicture2.webp',
-      './assets/images/mainPicture3.webp',
-      './assets/images/mainPicture4.webp',
-      './assets/images/mainPicture5.webp'
-    ]
-  });
 });

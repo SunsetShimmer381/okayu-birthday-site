@@ -304,12 +304,6 @@
     overflow: hidden;
     background-color: #ffffff;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
-    cursor: pointer;
-    transition: transform 0.3s ease;
-  }
-
-  .portrait-photo-wrap:hover {
-    transform: scale(1.02);
   }
 
   .portrait-photo {
@@ -326,32 +320,7 @@
     opacity: 0;
   }
 
-  .portrait-key {
-    position: absolute;
-    right: 10px;
-    bottom: 10px;
-    font-size: 18px;
-    color: rgba(255,255,255,0.92);
-    text-shadow: 0 2px 6px rgba(90,40,80,0.35);
-    pointer-events: none;
-    line-height: 1;
-  }
 
-  .click-hint {
-    position: absolute;
-    bottom: 8px;
-    left: 10px;
-    font-size: 11px;
-    color: rgba(255,255,255,0.8);
-    text-shadow: 0 1px 3px rgba(90,40,80,0.4);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .portrait-photo-wrap:hover .click-hint {
-    opacity: 1;
-  }
 
   /* 拍立得底部签名区 */
   .portrait-caption {
@@ -1434,105 +1403,115 @@
 
   /* ===== 粉丝留言 ===== */
   .messages-wrapper {
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
     width: 100%;
-    height: 60vh;
-    max-height: 600px;
-    background: linear-gradient(145deg, #fffdf5 0%, #fff5f8 100%);
-    border-radius: 24px;
-    box-shadow: 
-      0 4px 20px rgba(212, 112, 138, 0.12),
-      0 12px 40px rgba(212, 112, 138, 0.08);
-    border: 1px solid rgba(240, 200, 210, 0.6);
-    overflow: hidden;
+    min-height: 400px;
+    background: #FFF5F8;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    overflow: visible;
     position: relative;
+    padding: 24px 0 40px;
   }
 
-  .messages-header {
-    padding: 20px 24px;
-    background: linear-gradient(160deg, #fef0f3 0%, #fce4ec 100%);
-    border-bottom: 1px dashed rgba(212, 112, 138, 0.2);
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  /* 顶部统计栏 */
+  .messages-top-bar {
+    padding: 0 24px 20px;
+    border-bottom: 1px dashed rgba(255, 182, 193, 0.3);
+    margin-bottom: 24px;
   }
 
-  .messages-header-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #f8b4c4 0%, #e89bb3 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
+  .messages-stats {
     font-size: 14px;
-    box-shadow: 0 2px 8px rgba(212, 112, 138, 0.2);
+    color: #666;
   }
 
-  .messages-header-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #d4708a;
-    margin: 0;
+  .messages-stats span {
+    color: #FF698F;
+    font-weight: 500;
   }
 
-  .messages-header-count {
-    margin-left: auto;
-    font-size: 12px;
-    color: #aaa;
-    background: rgba(255, 255, 255, 0.8);
-    padding: 4px 10px;
-    border-radius: 12px;
-  }
-
+  /* 留言卡片容器 - 两列瀑布流布局 */
   .messages-container {
-    padding: 16px;
-    height: calc(100% - 72px);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+    padding: 0 12px;
+    min-height: 300px;
+    overflow: visible;
+    column-count: 2;
+    column-gap: 20px;
   }
 
-  /* 自定义滚动条 */
-  .messages-container::-webkit-scrollbar {
-    width: 6px;
+  /* 响应式：小屏幕单列布局 */
+  @media (max-width: 768px) {
+    .messages-container {
+      column-count: 1;
+    }
   }
 
-  .messages-container::-webkit-scrollbar-track {
-    background: rgba(248, 180, 196, 0.1);
-    border-radius: 3px;
-  }
-
-  .messages-container::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #f8b4c4 0%, #e89bb3 100%);
-    border-radius: 3px;
-  }
-
-  .messages-container::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #e89bb3 0%, #d4708a 100%);
-  }
-
+  /* 留言卡片样式 */
   .message-card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 16px 20px;
-    box-shadow: 
-      0 2px 6px rgba(212, 112, 138, 0.06),
-      0 6px 16px rgba(212, 112, 138, 0.04);
-    border: 1px solid rgba(240, 200, 210, 0.4);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    animation: fadeInUp 0.5s ease forwards;
+    background: #FFE6ED;
+    border-radius: 4px;
+    padding: 20px 22px;
+    box-shadow:
+      2px 3px 10px rgba(0,0,0,0.05),
+      0 6px 18px rgba(255, 182, 193, 0.15);
+    border: 1px solid rgba(255, 182, 193, 0.15);
+    transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.25, 1), box-shadow 0.35s ease;
+    animation: fadeInUp 0.6s ease forwards;
     opacity: 0;
+    position: relative;
+    break-inside: avoid;
+    margin-bottom: 20px;
+    transform: rotate(var(--tilt, -0.6deg));
   }
 
-  .message-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 
-      0 4px 12px rgba(212, 112, 138, 0.12),
-      0 12px 32px rgba(212, 112, 138, 0.08);
+  /* 卡片悬浮状态 — 学白菜档案馆，hover 归零 */
+  .message-card-hover {
+    transform: rotate(0deg) translateY(-2px) !important;
+    box-shadow:
+      3px 6px 20px rgba(0,0,0,0.08),
+      0 12px 30px -10px rgba(255, 182, 193, 0.3),
+      0 0 0 2px rgba(255, 182, 193, 0.3) !important;
+  }
+
+  /* 胶带装饰 — 手撕便签风 */
+  .message-tape {
+    display: block;
+    width: 48px;
+    height: 14px;
+    margin: -26px auto 10px;
+    background: linear-gradient(
+      135deg,
+      rgba(255,255,255,0.7) 0%,
+      rgba(255,255,255,0.5) 40%,
+      rgba(245,235,225,0.4) 100%
+    );
+    border-radius: 1px;
+    transform: rotate(-5deg);
+    pointer-events: none;
+    box-shadow:
+      0 1px 2px rgba(0,0,0,0.04),
+      inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+
+  /* 卡片内容区域 */
+  .message-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* 卡片底部信息栏 */
+  .message-footer {
+    position: relative;
+    z-index: 1;
+  }
+
+  .message-author {
+    font-size: 13px;
+    color: #FF698F;
+    font-style: normal;
   }
 
   .message-header-inner {
@@ -1584,10 +1563,93 @@
       opacity: 0;
       transform: translateY(20px);
     }
-    to {
+    99% {
       opacity: 1;
       transform: translateY(0);
     }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* ===== 分页组件 ===== */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 32px;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    backdrop-filter: none;
+  }
+
+  .pagination-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #FFB6C1;
+    border-radius: 6px;
+    background: #fff;
+    color: #FF698F;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+  }
+
+  .pagination-btn:hover:not(:disabled) {
+    background: #FFE6ED;
+    border-color: #FF698F;
+  }
+
+  .pagination-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: #FFCCDB;
+    color: #CCC;
+  }
+
+  .pagination-numbers {
+    display: flex;
+    gap: 4px;
+  }
+
+  .pagination-number {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #FFB6C1;
+    border-radius: 6px;
+    background: #fff;
+    color: #FF698F;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: none;
+  }
+
+  .pagination-number:hover {
+    background: #FFF0F3;
+    border-color: #FF698F;
+  }
+
+  .pagination-number.active {
+    background: #FFB6C1;
+    border-color: #FFB6C1;
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .pagination-dots {
+    color: #FF9FB3;
+    font-size: 14px;
+    padding: 0 4px;
+    opacity: 0.6;
   }
 
   /* ===== 弹幕留言板 ===== */
@@ -1600,7 +1662,10 @@
     pointer-events: none;
     z-index: 500;
     overflow: hidden;
+    contain: strict;
   }
+
+
 
   .danmaku-item {
     position: absolute;
@@ -1610,16 +1675,19 @@
     padding: 6px 14px;
     border-radius: 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    animation: danmaku-scroll 12s linear forwards;
+    animation: danmaku-scroll linear forwards;
     pointer-events: auto;
     cursor: pointer;
     transition: transform 0.2s ease;
+    will-change: transform;
   }
   
   .danmaku-item:hover {
+    animation-play-state: paused;
     transform: scale(1.05);
     background-color: rgba(255, 255, 255, 0.95);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    z-index: 31;
   }
 
   .danmaku-item .danmaku-name {
@@ -2423,7 +2491,41 @@ img, video, iframe {
   .tooltip-arrow {
     display: none;
   }
-  .click-hint {
-    opacity: 1;
+}
+
+/* ===== 底栏 ===== */
+.footer {
+  padding: 60px 24px 60px;
+  text-align: center;
+  border-top: 1px solid rgba(212, 112, 138, 0.1);
+  background: linear-gradient(180deg, transparent, rgba(255, 240, 245, 0.4));
+}
+
+.footer-inner {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.footer-line {
+  font-size: 13px;
+  color: #b09090;
+  line-height: 2;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.footer-copy {
+  font-size: 11px;
+  color: #c8a0b0;
+  margin-top: 18px;
+  letter-spacing: 0.1em;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding: 40px 16px 50px;
+  }
+  .footer-line {
+    font-size: 12px;
   }
 }
