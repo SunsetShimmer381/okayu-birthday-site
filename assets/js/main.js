@@ -1305,14 +1305,14 @@ class GiftModalController {
   }
 
   bindGiftItemClick() {
-    const giftItems = document.querySelectorAll('.gift-item');
+    const giftItems = document.querySelectorAll('.gift-card');
     this._giftItemHandlers = [];
     
     giftItems.forEach(item => {
       const itemClickHandler = () => {
         const type = item.dataset.type;
         const url = item.dataset.url;
-        const title = item.dataset.title || item.querySelector('.gift-title')?.textContent || this.defaultTitle;
+        const title = item.dataset.title || item.querySelector('.gift-card-title')?.textContent || this.defaultTitle;
         
         this.open(type, url, title);
       };
@@ -1348,22 +1348,23 @@ class GiftModalController {
   open(type, url, title) {
     // 清空内容
     this.content.innerHTML = '';
+    this.content.classList.remove('video-mode');
 
     if (!url || url.trim() === '') {
       // 预留内容，显示占位提示
       this.content.innerHTML = `
         <div style="aspect-ratio: 16/9; background: linear-gradient(135deg, #fff5f8 0%, #ffe8f0 100%); display: flex; align-items: center; justify-content: center;">
           <div style="text-align: center; color: #d4708a;">
-            <div style="font-size: 48px; margin-bottom: 16px;">🎁</div>
-            <div style="font-size: clamp(14px, 2vw, 16px);">内容即将开放</div>
-            <div style="font-size: clamp(12px, 1.5vw, 14px); color: #888; margin-top: 8px;">敬请期待</div>
+            <div style="font-size: 16px; margin-bottom: 8px;">内容準備中</div>
+            <div style="font-size: clamp(12px, 1.5vw, 14px); color: #b09090;">—— 敬请期待 ——</div>
           </div>
         </div>
       `;
       this.title.textContent = title;
       this.desc.textContent = '该内容暂未开放，敬请期待';
     } else if (type === 'video') {
-      // 视频内容
+      // 与 Page4 VideoModalController 采用相同的 padding-top 容器方案
+      this.content.classList.add('video-mode');
       let embedUrl = url;
       if (url.includes('bilibili.com/video/')) {
         const bvid = Utils.extractBvid(url);
@@ -1371,13 +1372,13 @@ class GiftModalController {
           embedUrl = `//player.bilibili.com/player.html?bvid=${bvid}&autoplay=1&muted=0`;
         }
       }
-      
+
       const iframe = document.createElement('iframe');
       iframe.src = embedUrl;
       iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
       iframe.allowFullscreen = true;
       this.content.appendChild(iframe);
-      
+
       this.title.textContent = title;
       this.desc.textContent = '点击播放视频';
     } else if (type === 'image') {
@@ -1390,8 +1391,7 @@ class GiftModalController {
         img.style.display = 'none';
         this.content.innerHTML = `
           <div style="aspect-ratio: 16/9; background: linear-gradient(135deg, #fff5f8 0%, #ffe8f0 100%); display: flex; align-items: center; justify-content: center;">
-            <div style="text-align: center; color: #d4708a;">
-              <div style="font-size: 48px; margin-bottom: 16px;">🖼️</div>
+            <div style="text-align: center; color: #b09090;">
               <div style="font-size: clamp(14px, 2vw, 16px);">图片加载失败</div>
             </div>
           </div>
@@ -1400,7 +1400,7 @@ class GiftModalController {
       this.content.appendChild(img);
       
       this.title.textContent = title;
-      this.desc.textContent = '点击图片可放大查看';
+      this.desc.textContent = '';
     }
 
     // 显示弹窗
@@ -1597,18 +1597,8 @@ class VideoModalController {
   }
 }
 
-// ===== 头像图片切换器 =====
 // ===== 页面初始化 =====
 document.addEventListener('DOMContentLoaded', async () => {
-  // 加载小说内容并设置同步
-  const novelLoader = new NovelLoader({
-    onLoadComplete: () => {
-      const novelSyncController = new NovelSyncController();
-      novelSyncController.init();
-    }
-  });
-  await novelLoader.load();
-
   // 初始化礼物弹窗
   const giftModalController = new GiftModalController();
 
@@ -1618,4 +1608,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 初始化视频弹窗
   const videoModalController = new VideoModalController();
 
+  // Page3 时间线中内联视频链接（如"自我介绍视频"）
+  document.querySelectorAll('.timeline-video-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      videoModalController.open({
+        title: link.dataset.title || '',
+        url: link.dataset.url || '',
+        desc: link.textContent || ''
+      });
+    });
+  });
 });

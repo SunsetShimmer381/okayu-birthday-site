@@ -1,126 +1,281 @@
-# 猫羽おかゆ お誕生日 🎂
+## 1. 高层摘要 (TL;DR)
 
-一个为 **猫羽おかゆ** 制作的生日庆祝静态网页。
+*   **影响范围:** 🟡 **中等** - 主要是Page6页面的重构和小说模块的架构调整
+*   **核心变更:**
+    *   ✨ Page6页面从"双语对照阅读"模式重构为"章节导航+下载"模式
+    *   🗑️ 删除了构建期预对齐的`novel_data.json`及原文文件
+    *   🎨 新增手账便签风格的特殊赠礼展示区
+    *   📝 更新了时间线内容,新增"超长耐久回"和"联动"事件
+    *   🔧 修复了昵称标签样式和时间线视频链接交互
+    **尚未完成内容:**
+    *   多数信息内容未填写，视频链接、图片未上传
 
-## 项目结构
+---
 
+## 2. 视觉概览 (代码与逻辑映射)
+
+```mermaid
+graph TD
+    subgraph "Page6 页面重构"
+        A["用户访问 Page6"] --> B["特殊赠礼展示区<br/>gift-showcase"]
+        A --> C["小说章节导航区<br/>novel-section"]
+        
+        B --> B1["图片卡片<br/>gift-card-img-glass"]
+        B --> B2["视频卡片<br/>gift-card-video"]
+        B --> B3["预留卡片<br/>gift-card-placeholder"]
+        
+        C --> C1["日语章节列表<br/>novel-lang-col"]
+        C --> C2["中文章节列表<br/>novel-lang-col"]
+        
+        C1 --> D["点击浏览/下载<br/>chapter-btn"]
+        C2 --> D
+    end
+    
+    subgraph "JavaScript 交互"
+        E["GiftModalController"] --> F["处理卡片点击<br/>open()"]
+        G["VideoModalController"] --> H["时间线视频链接<br/>timeline-video-link"]
+    end
+    
+    subgraph "删除的模块"
+        I["novel_data.json<br/>238条预对齐数据"]
+        J["novel_jp.txt<br/>日文原文"]
+        K["novel_zh.txt<br/>中文翻译"]
+        L["NovelLoader<br/>加载器"]
+        M["NovelSyncController<br/>同步控制器"]
+    end
+    
+    style B fill:#fff3e0,color:#e65100
+    style C fill:#e3f2fd,color:#0d47a1
+    style I fill:#ffcdd2,color:#c62828
+    style J fill:#ffcdd2,color:#c62828
+    style K fill:#ffcdd2,color:#c62828
 ```
-sssdsd/
-├── index.html              # 主页面
-├── README.md               # 项目说明
-├── .gitignore              # Git 忽略规则
-├── assets/
-│   ├── images/             # 图片资源
-│   └── videos/             # 视频资源
-├── novel_jp.txt            # 日文小说
-└── novel_zh.txt            # 中文小说翻译
+
+---
+
+## 3. 详细变更分析
+
+### 📄 **3.1 Page6 页面重构** (`index.html`)
+
+#### 🎯 **变更目标**
+将Page6从"双语对照在线阅读"模式改为"章节导航+文件下载"模式,简化实现并提升用户体验。
+
+#### 📋 **具体变更**
+
+| 组件 | 变更前 | 变更后 | 说明 |
+|------|--------|--------|------|
+| **特殊赠礼区** | 简单的3个预留卡片 | 手账便签风格的三卡片展示 | 新增毛玻璃覆盖、胶带装饰、播放按钮等 |
+| **小说展示** | 双语对照滚动阅读 | 双栏章节导航列表 | 每章提供"浏览"和"下载"按钮 |
+| **数据源** | `novel_data.json` (预对齐) | 直接链接到txt文件 | 删除了复杂的对齐逻辑 |
+
+#### 🏗️ **新增HTML结构**
+
+```html
+<!-- 特殊赠礼展示区 -->
+<div class="gift-showcase">
+  <div class="gift-card gift-card-img-glass">...</div>  <!-- 左侧蝶的插画 -->
+  <div class="gift-card gift-card-video">...</div>      <!-- 中间:视频预留 -->
+  <div class="gift-card gift-card-placeholder">...</div> <!-- 右侧:预留 -->
+</div>
+
+<!-- 小说章节导航 -->
+<div class="novel-section">
+  <div class="novel-lang-row">
+    <div class="novel-lang-col">
+      <!-- 日语7章 -->
+      <div class="chapter-item">
+        <a href="./assets/novel/jp/01_第01章_雨夜の弦音、異世界からの来訪者.txt" 
+           class="chapter-btn" target="_blank">浏览</a>
+        <a href="..." class="chapter-btn chapter-btn-download" download>下载</a>
+      </div>
+    </div>
+    <div class="novel-lang-col">
+      <!-- 中文7章 -->
+    </div>
+  </div>
+</div>
 ```
 
-## 说明
+---
 
-- 纯 HTML + CSS 静态页面，无需构建工具
-- 使用 Google Fonts（Noto Sans JP）和 LXGW WenKai 字体
-- 响应式设计，适配移动端
+### 🎨 **3.2 CSS 样式重构** (`assets/css/style.css`)
 
-  
-  claude 改动：
-  1. 宏观总结
+#### 📊 **样式变更表**
 
-  本次重构把 Page6 的中日双语对照功能从「前端运行时启发式对齐」彻底切换为「构建期预对齐 + 运行时纯 id 直查」，同时顺手补完了移动端响应式与 Page Review 报告。根本治愈了"hover/click 之后中日段落全局错位"的高亮 Bug，并把整套对齐代码量从 ~80 行降到 ~10 行。
+| 样式类 | 变更类型 | 说明 |
+|--------|----------|------|
+| `.nickname-text` → `.nickname-tags` | 重构 | 昵称从文本改为标签样式 |
+| `.timeline-video-link` | 新增 | 时间线内嵌视频链接样式 |
+| `.gift-hero` | 新增 | 主视觉横幅(手账风格) |
+| `.gift-showcase` | 新增 | 三卡片网格布局 |
+| `.gift-card` | 新增 | 礼物卡片基础样式 |
+| `.gift-tape` | 新增 | 胶带装饰 |
+| `.glass-overlay` | 新增 | 毛玻璃覆盖层 |
+| `.novel-section` | 新增 | 小说章节导航容器 |
+| `.chapter-list` | 新增 | 章节列表样式 |
+| `.download-btn` | 新增 | 下载按钮样式 |
 
-  2. 改动文件清单
+#### 🔍 **关键样式细节**
 
-  ┌──────────────────────┬──────┬───────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │         文件         │ 类型 │     增/删行数     │                                                          说明                                                           │
-  ├──────────────────────┼──────┼───────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ assets/js/main.js    │ 修改 │ +165 / −109       │ 重写 NovelLoader（JSON 加载）与 NovelSyncController（id 直查）；保留并加固事件委托 / 滚动补偿 / nav 偏移逻辑            │
-  ├──────────────────────┼──────┼───────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ assets/css/style.css │ 修改 │ +174 / −0         │ 新增"移动端响应式综合修复"区块（nav 横滑、overflow-x: hidden 兜底、倒计时 2×2、info-row 堆叠、@media (hover: none) 等） │
-  ├──────────────────────┼──────┼───────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ novel_data.json      │ 新增 │ +1192 行 (~57 KB) │ 构建期生成的语义对齐数据，238 条 { id, jp, zh }                                                                         │
-  ├──────────────────────┼──────┼───────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ Review_Report.md     │ 新增 │ 186 行            │ 项目初版 Review 报告（架构、Bug 定位、移动端问题）                                                                      │
-  └──────────────────────┴──────┴───────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+**昵称标签样式:**
+```css
+.nickname-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
 
-  ▎ index.html / novel_jp.txt / novel_zh.txt 未修改——原始数据保留，HTML 容器结构复用。
+.nickname-tag {
+  padding: 5px 14px;
+  background: rgba(255, 245, 248, 0.9);
+  border: 1px solid rgba(212, 112, 138, 0.18);
+  border-radius: 20px;
+  transition: all 0.25s ease;
+}
+```
 
-  3. 逻辑说明 —— 旧代码痛点 vs. 新代码方案
+**毛玻璃覆盖层:**
+```css
+.glass-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 18px 16px;
+  background: linear-gradient(0deg, rgba(255,255,255,0.75) 0%, 
+                                   rgba(255,255,255,0.35) 60%, 
+                                   transparent 100%);
+  backdrop-filter: blur(2px);
+}
+```
 
-  3.1 旧代码的核心痛点
+---
 
-  前端每次刷新都要"现场猜对齐"，启发式经历了三轮翻车：
+### ⚙️ **3.3 JavaScript 逻辑调整** (`assets/js/main.js`)
 
-  1. 第一版（serial 直接匹配）
-  读两份 txt → 用正则 ^(\d+)[.、:：]\s* 抽出行首数字当 data-serial → 同 serial 互相高亮。
-  痛点：完全依赖人手把两份 txt 的"1./2./3."编号一一对齐。中文文件第 27 行附近合并了两段日文之后，整个翻译里日文比中文多一行，从那以后 serial 数字相同但内容不同——hover JP-172 高亮到 ZH-172（实际对应 JP-171），全篇错位。
-  2. 第二版（pidx 主键 + serial 兜底）
-  引入"第 N 个非空段落"作为绝对主键 data-pidx，serial 作为 fallback。
-  痛点：因为两侧的 pidx 总能命中（每个段落都有 pidx），serial 兜底永远跑不到；只要中间发生一次合并/拆分，后续所有 pidx 全部偏移一行，错位面积反而更大。
-  3. 第三版（Block-level 相对匹配）
-  按 serial 聚成 Block，块内取相对位置，越界贴底。
-  痛点：仍然要求两侧 serial 集合大体一致；而且只要源 txt 一个数字写错，整篇还是会塌方。本质上"运行时根据手工编号反推语义对齐"是错的，对齐应该在构建期完成、写到一处不可变的数据里。
+#### 🔄 **GiftModalController 更新**
 
-  此外还堆叠了几个隐性 Bug：
+| 方法 | 变更内容 | 原因 |
+|------|----------|------|
+| `bindGiftItemClick()` | 选择器 `.gift-item` → `.gift-card` | 匹配新的HTML结构 |
+| `open()` | 添加 `video-mode` CSS类 | 与Page4视频弹窗保持一致 |
+| `open()` | 占位提示文本改为日文 | 风格统一 |
 
-  - document.addEventListener('mouseleave', …, true) 在 document 上几乎永不触发，导致"离开小说区清空高亮"逻辑形同虚设；
-  - 内层滚动用 targetP.offsetTop，而 .novel-content 祖先没有 position 定位，offsetParent 一路走到 <body>，得到几千像素的页面坐标，喂给容器 scrollTo 会被钳到底端——表现为"位置乱跳/直接滚到最底";
-  - 逐段绑定 mouseenter，无法对未来段落内子节点（<br>、ruby、span）做事件委托。
+#### 🗑️ **删除的代码**
 
-  3.2 新代码方案 —— JSON-Driven 三段式
-
-  Step ① 构建期：语义对齐成 novel_data.json
-
-  用 Python 离线脚本把两份 txt 处理一次：
-  - 1–26、29–238 直对 1:1；
-  - JP-27 + JP-28 → 合并到 entry 27 的 jp 字段（中文译者把两句日文揉成一段中文）；
-  - JP-239 → 拆到 entry 238 的 zh 字段两行（最后一句日文里旁白和台词同行，中文拆开了）；
-  - 多行用 \n 连接；脚本里加了 assert used_jp == range(1,240) 双向断言，保证 1–239 行全部恰好覆盖一次，零遗漏。
-
-  输出：238 条 [{ "id", "jp", "zh" }, …]。id 从此就是全局唯一的绝对锚点。
-
-  Step ② 加载期：NovelLoader 一次 fetch
-
-  const data = await (await fetch('./novel_data.json')).json();
-  const jpHtml = data.map(e => `<p class="novel-paragraph" data-id="${e.id}">${escape(e.jp).replaceAll('\n','<br>')}</p>`).join('');
-
-  不再有 formatNovelText 的正则切分、不再有 data-pidx / data-serial 这套元数据，DOM 上每个段落只挂一个 data-id。\n 渲染为 <br> 保留阅读节奏，文本统一走 Utils.escapeHtml。
-
-  Step ③ 运行期：NovelSyncController 退化到 O(1) 直查
-
-  setupMappings() {
-    this.jpById.clear(); this.zhById.clear();
-    this.elements.jpContainer.querySelectorAll('.novel-paragraph[data-id]')
-      .forEach(p => this.jpById.set(p.dataset.id, p));
-    this.elements.zhContainer.querySelectorAll('.novel-paragraph[data-id]')
-      .forEach(p => this.zhById.set(p.dataset.id, p));
+```javascript
+// 删除了小说加载和同步控制器
+const novelLoader = new NovelLoader({
+  onLoadComplete: () => {
+    const novelSyncController = new NovelSyncController();
+    novelSyncController.init();
   }
-  findCounterpart(sourceP, isJp) {
-    return (isJp ? this.zhById : this.jpById).get(sourceP.dataset.id) || null;
-  }
+});
+await novelLoader.load();
+```
 
-  匹配代码从近 80 行 Block 算法塌缩成两行。因为对齐已经在 JSON 里固化，运行时不可能再错位——这就是"全局错位 Bug"被根治的根因。
+#### ✨ **新增功能**
 
-  3.3 配套保留 / 加固的体验逻辑
+```javascript
+// 时间线内嵌视频链接点击处理
+document.querySelectorAll('.timeline-video-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    videoModalController.open({
+      title: link.dataset.title || '',
+      url: link.dataset.url || '',
+      desc: link.textContent || ''
+    });
+  });
+});
+```
 
-  - 事件委托：mouseover / click / touchstart 挂在 .novel-content 容器上，走 e.target.closest('.novel-paragraph')，未来段落里加 <br> / <span> / <ruby> 都能正确冒泡命中。_lastHoverP 去抖防止同段落内重复触发。
-  - mouseleave 修正：从 document 改挂到 .novel-container（mouseleave 不冒泡），高亮清理终于真的会触发。
-  - 滚动定位修复 + nav 补偿：内层用 getBoundingClientRect() 精算"段落相对容器顶端的偏移 + 容器现有 scrollTop"，把目标段放到容器视口上 1/3 处；同时 getNavBottom() + ensureColumnVisible() 检查目标列是否被 fixed 导航栏盖住或滑出视口，必要时 window.scrollBy
-  做页面级补偿（手机端两列堆叠场景尤其关键）。
+---
 
-  3.4 顺手做掉的事
+### 📝 **3.4 内容更新** (`index.html`)
 
-  1. 移动端响应式综合修复（CSS +174 行）：html, body { overflow-x: hidden }、img/video/iframe { max-width: 100% }、nav 横向滚动、倒计时 2×2、.info-row 列堆叠、timeline tooltip 宽度自适应、@media (hover: none) 让 hover 关键入口在触屏上常显，等等。
-  2. Review_Report.md：项目初版 Review，包含架构梳理、Bug 定位、移动端问题清单——可作为本次重构的"问题背景档案"留档。
+#### 🎭 **人物设定更新**
 
-  4. 验收清单
+| 字段 | 旧值 | 新值 |
+|------|------|------|
+| 人物描述 | `111` | `一只三岁的爱唱歌的软软猫猫哦~` |
+| 标签 | `#タグ3` | `#猫粥宝` |
+| 昵称 | `猫猫·粥酱·白粥·皮卡粥·事故势猫猫` | `ねこちゃん·おかゆちゃん·おかゆん·白粥·事故势猫猫` |
+| 口癖 | `口癖4 / 中文 / 意味/使い方` | `ははははは~ / 哈哈哈哈~ / 这健康的笑声总是响彻直播间~` |
 
-  - Page6 加载后，DevTools 在 #novelJapanese / #novelChinese 下各看到 238 个 <p class="novel-paragraph" data-id="1..238">。
-  - Network 面板只有 1 次 novel_data.json 请求，没有 novel_jp.txt / novel_zh.txt 请求。
-  - hover/click 任意段落，对侧同 id 段落高亮、内层滚到容器视口上 1/3 处。
-  - 移动端窄屏下 nav 可横滑、首屏无横向溢出、两列堆叠时联动滚动会自动越过 nav 高度。
-  - Console 干净，没有 data-pidx / data-serial / Block 错位相关 warning。
+#### 📅 **时间线事件更新**
 
-  5. 风险与回滚
+| 事件 | 变更 |
+|------|------|
+| **删除** | "涨粉潮" (2026.4.19) - 合并到"初次相遇" |
+| **修改** | "初次相遇" - 添加了视频链接,合并涨粉数据 |
+| **新增** | "超长耐久回" (2026.5.21) - 整整直播了八个小时 |
+| **新增** | "和すみれちゃん联动" (2026.5.23) - 联动直播问答 |
+| **修改** | "百舰了!" - 添加感叹号,语气更强烈 |
+| **修改** | "初配信" - 添加"实则后边也是,不愧是事故势(笑)" |
 
-  - 运行时新增依赖：必须能 fetch 到同源 novel_data.json。本地用 Live Server / 任意静态服务即可；file:// 直接打开 HTML 会被浏览器 CORS 拦截 fetch——这是 JSON-Driven 方案的固有约束。
-  - 回滚路径：单文件 revert assets/js/main.js + 删 novel_data.json 即恢复到上一版 Block-level 实现；txt 源文件没动过，没有数据丢失风险。
+---
+
+### 🗂️ **3.5 文件删除与新增**
+
+#### ❌ **删除的文件**
+
+| 文件 | 大小 | 说明 |
+|------|------|------|
+| `COMPREHENSIVE_REPORT.md` | 233行 | 项目综合报告文档 |
+| `novel_data.json` | 1192行 | 中日小说预对齐数据(238条) |
+| `novel_jp.txt` | 239行 | 日文小说原文 |
+| `novel_zh.txt` | 239行 | 中文小说翻译 |
+
+---
+
+## 4. 影响与风险评估
+
+### ⚠️ **破坏性变更**
+
+| 变更项 | 影响范围 | 风险等级 | 建议 |
+|--------|----------|----------|------|
+| 删除`novel_data.json` | Page6小说阅读功能 | 🟡 中 | 确保txt文件路径正确 |
+| 删除`NovelLoader`/`NovelSyncController` | 小说同步高亮功能 | 🟡 中 | 已替换为章节导航模式 |
+| CSS类名变更 | Page6样式 | 🟢 低 | 已同步更新HTML和JS |
+
+### 🧪 **测试建议**
+
+1.  **Page6 特殊赠礼区:**
+    *   ✅ 验证图片卡片毛玻璃效果
+    *   ✅ 验证视频卡片播放按钮交互
+    *   ✅ 验证预留卡片占位符显示
+
+2.  **Page6 小说导航:**
+    *   ✅ 验证日语章节"浏览"按钮链接正确
+    *   ✅ 验证中文章节"下载"按钮触发下载
+    *   ✅ 验证章节悬停效果
+
+3.  **时间线功能:**
+    *   ✅ 验证"自我介绍视频"链接点击打开弹窗
+    *   ✅ 验证新增时间线事件显示正确
+
+4.  **响应式布局:**
+    *   ✅ 移动端昵称标签换行正常
+    *   ✅ 小说章节列表在小屏幕上的显示
+
+---
+
+## 5. 变更总结
+
+| 类别 | 变更数量 | 状态 |
+|------|----------|------|
+| **页面重构** | 1个(Page6) | ✅ 完成 |
+| **样式变更** | ~500行CSS | ✅ 完成 |
+| **逻辑调整** | ~20行JS | ✅ 完成 |
+| **内容更新** | 5处文本 | ✅ 完成 |
+| **文件删除** | 4个 | ✅ 完成 |
+| **文件新增** | 2个(备份) | ✅ 完成 |
+
+---
+
+**变更时间:** 2026-05-21  
+**影响模块:** Page6、时间线、昵称显示  
+**架构调整:** 从"前端运行时对齐"切换到"静态文件+导航"模式
