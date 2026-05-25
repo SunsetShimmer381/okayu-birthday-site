@@ -358,7 +358,7 @@ class DanmakuManager {
     }
   }
 
-  createDanmaku(name, text) {
+  createDanmaku(name, text, cnText) {
     if (!name || !text) return null;
 
     const el = document.createElement('div');
@@ -366,24 +366,48 @@ class DanmakuManager {
     
     const escapedName = Utils.escapeHtml(name);
     const escapedText = Utils.escapeHtml(text);
+    const escapedCnText = cnText ? Utils.escapeHtml(cnText) : '';
     
     el.innerHTML = `<span class="danmaku-name">${escapedName}</span><span class="danmaku-text">| ${escapedText}</span>`;
+    el.dataset.text = escapedText;
+    el.dataset.cnText = escapedCnText;
+    el.dataset.lang = 'jp';
+    el.dataset.name = escapedName;
     
-    // 轨道分配：轮转，保证弹幕均匀分布在 6 条轨道上
     el.style.top = `${this.trackTops[this.nextTrack % this.trackCount]}vh`;
     this.nextTrack++;
     
-    // 弹幕动画时长随机
     el.style.animationDuration = `${this.minDuration + Math.random() * (this.maxDuration - this.minDuration)}s`;
     
     this.danmakus.add(el);
     this.container.appendChild(el);
+
+    if (escapedCnText) {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.flipDanmaku(el);
+      });
+    }
     
     el.addEventListener('animationend', () => {
       this.removeDanmaku(el);
     });
     
     return el;
+  }
+
+  flipDanmaku(el) {
+    if (el.classList.contains('flipping')) return;
+    el.classList.add('flipping');
+    const isJp = el.dataset.lang === 'jp';
+    const escapedName = el.dataset.name;
+
+    setTimeout(() => {
+      const newText = isJp ? el.dataset.cnText : el.dataset.text;
+      el.innerHTML = `<span class="danmaku-name">${escapedName}</span><span class="danmaku-text">| ${newText}</span>`;
+      el.dataset.lang = isJp ? 'cn' : 'jp';
+      el.classList.remove('flipping');
+    }, 200);
   }
 
   removeDanmaku(el) {
@@ -401,22 +425,22 @@ class DanmakuManager {
 
 // 弹幕数据（留言板示例数据）
 const sampleDanmaku = [
-  { name: '【曦月】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】' }
+  { name: '【曦月】', text: '【おかゆんもファンのみんなも、規則正しい生活を大事にして、元気いっぱい楽しく健康にずっと歩んでいってほしい。その盛大な未来、僕もこの目で見届けたいから。】', cnText: '【希望Okayun和粉丝们都能保持良好的作息，健健康康快快乐乐元气满满的一直走下去，我还想见证那个盛大的未来呢。】' },
+  { name: '【北斗肥龙】', text: '【フェイロンと一緒に世界を制覇しよう！】', cnText: '【和肥龙一起统治世界！】' },
+  { name: '【千代時雨】', text: '【おかゆちゃんやみんなと出会えて、本当に良かったニャ〜】', cnText: '【能和おかゆちゃん、大家相遇真是太好了喵~】' },
+  { name: '【菟丝子】', text: '【うさぎさんです。おかゆんのことが大好き！！！おかゆんならきっと成功できるって信じてる！！！絶対に夢を叶えられる！！！ずっとずっとずっと応援してるからね、おかゆん！！！】', cnText: '【这里是うさぎさん，我最喜欢おかゆん了！！！我相信おかゆん一定能成功的！！！一定可以实现自己的梦想的！！！我会一直一直一直支持你おかゆん！！！】' },
+  { name: '【暮雪】', text: '【おかゆちゃんを推せて嬉しい。おかゆちゃんも、みんなも、素敵な思い出をたくさん残せますように！】', cnText: '【很高兴能推小粥，希望猫粥宝和小粥都能留下一段美好的时光！】' },
+  { name: '【雪風】', text: '【おかゆちゃん、これからは風も水も順調で、ツイてることばっかり。これがボク雪風からの祝福だから、ありがたく受け取りなにゃ！】', cnText: '【粥酱，愿此后风调雨顺、万事顺遂，好运常伴左右。这是我雪风送上的祝福，可要好好收下哦喵～】' },
+  { name: '【Alex】', text: '【白粥ちゃん、楽しく暮らして、楽しく配信してね。みんな白粥ちゃんのそばにいるよ！】', cnText: '【白粥要快快乐乐生活，快快乐乐直播，大家都会陪着白粥的!】' },
+  { name: '【若葉チョウ】', text: '【NMT! NMT! 猫羽おかゆちゃん マジ 天才!! 猫羽おかゆちゃん マジ 天使!!】', cnText: '【奇才天纵!!天使降临!!——猫羽粥酱！!】' },
+  { name: '【更新失敗】', text: '【白粥ちゃん、こんにちは。君の時間を無駄にしてるんだ。しかも、成功したよ。】', cnText: '【白粥你好，我在浪费你的时间，而且我成功了。】' },
+  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
+  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
+  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
+  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
+  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
+  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
+  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' }
 ];
 
 // 初始化弹幕管理器
@@ -460,7 +484,8 @@ class MessageBoardRenderer {
     if (!Array.isArray(data)) return [];
     return data.map(item => ({
       name: item.name ? Utils.escapeHtml(String(item.name)) : '匿名',
-      text: item.text ? Utils.escapeHtml(String(item.text)) : ''
+      text: item.text ? Utils.escapeHtml(String(item.text)) : '',
+      cnText: item.cnText ? Utils.escapeHtml(String(item.cnText)) : ''
     }));
   }
 
@@ -547,41 +572,33 @@ class MessageBoardRenderer {
     card.className = 'message-card';
     card.style.animationDelay = `${index * 0.1}s`;
 
-    // 添加随机背景色（马卡龙色系）
     const colorIndex = index % this.cardColors.length;
     card.style.background = this.cardColors[colorIndex];
 
-    // 微倾斜（±1.2度）—— 真实便签贴歪一点但不会太大
     const randomRotation = (Math.random() * 2.4 - 1.2).toFixed(2);
     card.style.setProperty('--tilt', `${randomRotation}deg`);
 
-    // 使用DOM方法创建元素，避免innerHTML的XSS风险
-    const tape = document.createElement('span');
-    tape.className = 'message-tape';
-    
-    const content = document.createElement('div');
-    content.className = 'message-content';
-    
-    const textPara = document.createElement('p');
-    textPara.className = 'message-text';
-    textPara.textContent = item.text; // 使用textContent防止XSS
-    content.appendChild(textPara);
-    
-    const footer = document.createElement('div');
-    footer.className = 'message-footer';
-    
-    const author = document.createElement('span');
-    author.className = 'message-author';
-    author.textContent = `— ${item.name}`; // 使用textContent防止XSS
-    footer.appendChild(author);
-    
-    card.appendChild(tape);
-    card.appendChild(content);
-    card.appendChild(footer);
+    const inner = document.createElement('div');
+    inner.className = 'message-card-inner';
 
-    // 鼠标悬浮效果 - 使用CSS类实现平滑过渡
+    const front = this.createCardFace(item, 'front');
+    const back = this.createCardFace(item, 'back');
+
+    inner.appendChild(front);
+    inner.appendChild(back);
+    card.appendChild(inner);
+
+    if (item.cnText) {
+      card.classList.add('flippable');
+      card.addEventListener('click', () => {
+        inner.classList.toggle('flipped');
+      });
+    }
+
     card.addEventListener('mouseenter', () => {
-      card.classList.add('message-card-hover');
+      if (!inner.classList.contains('flipped')) {
+        card.classList.add('message-card-hover');
+      }
     });
 
     card.addEventListener('mouseleave', () => {
@@ -589,6 +606,38 @@ class MessageBoardRenderer {
     });
 
     return card;
+  }
+
+  createCardFace(item, face) {
+    const faceEl = document.createElement('div');
+    faceEl.className = `message-card-${face}`;
+
+    const tape = document.createElement('span');
+    tape.className = 'message-tape';
+
+    const content = document.createElement('div');
+    content.className = 'message-content';
+
+    const textPara = document.createElement('p');
+    textPara.className = 'message-text';
+    textPara.textContent = face === 'front' ? item.text : (item.cnText || item.text);
+
+    content.appendChild(textPara);
+
+    const footer = document.createElement('div');
+    footer.className = 'message-footer';
+
+    const author = document.createElement('span');
+    author.className = 'message-author';
+    author.textContent = `— ${item.name}`;
+
+    footer.appendChild(author);
+
+    faceEl.appendChild(tape);
+    faceEl.appendChild(content);
+    faceEl.appendChild(footer);
+
+    return faceEl;
   }
 
   renderPagination() {
@@ -728,10 +777,9 @@ class DanmakuAutoPlayer {
   }
 
   sendNext() {
-    // 随机选取一条弹幕数据
     const randomIndex = Math.floor(Math.random() * this.data.length);
     const item = this.data[randomIndex];
-    this.manager.createDanmaku(item.name, item.text);
+    this.manager.createDanmaku(item.name, item.text, item.cnText);
   }
 
   stop() {
@@ -1457,15 +1505,45 @@ class TimelineImageViewer {
   }
 
   bindEvents() {
-    // 事件委托绑定到时间线容器
     const timelineWrapper = document.querySelector('.timeline-wrapper');
     if (!timelineWrapper) return;
 
+    // ===== tooltip 悬浮：延迟隐藏，让鼠标有时间移动到左图 =====
+    const hideTimers = new Map();
+
+    timelineWrapper.addEventListener('mouseover', (e) => {
+      const item = e.target.closest('.timeline-item');
+      if (!item) return;
+      if (hideTimers.has(item)) {
+        clearTimeout(hideTimers.get(item));
+        hideTimers.delete(item);
+      }
+      item.classList.add('tooltip-visible');
+    });
+
+    timelineWrapper.addEventListener('mouseout', (e) => {
+      const item = e.target.closest('.timeline-item');
+      if (!item) return;
+      const related = e.relatedTarget;
+      if (related && item.contains(related)) return;
+      const timer = setTimeout(() => {
+        item.classList.remove('tooltip-visible');
+        hideTimers.delete(item);
+      }, 50);
+      hideTimers.set(item, timer);
+    });
+
+    // ===== 点击事件 =====
     timelineWrapper.addEventListener('click', (e) => {
-      const target = e.target;
-      if (target.classList.contains('tooltip-image')) {
+      if (e.target.closest('.timeline-video-link')) return;
+
+      const timelineItem = e.target.closest('.timeline-item');
+      if (!timelineItem) return;
+
+      const tooltipImage = timelineItem.querySelector('.tooltip-image');
+      if (tooltipImage && tooltipImage.src) {
         e.preventDefault();
-        this.open(target.src, target.alt);
+        this.open(tooltipImage.src, tooltipImage.alt);
       }
     });
 
@@ -1520,6 +1598,7 @@ class VideoModalController {
     this.modal = this.overlay ? this.overlay.querySelector('.video-modal') : null;
     this.iframe = document.getElementById('videoModalPlayer');
     this.descEl = document.getElementById('videoModalDesc');
+    this.titleEl = document.getElementById('videoModalTitle');
     this.closeBtn = this.overlay ? this.overlay.querySelector('.video-modal-close') : null;
     this.cards = document.querySelectorAll('.video-card');
     this._keydownHandler = null;
@@ -1564,8 +1643,11 @@ class VideoModalController {
   open({ title, url, desc }) {
     const embedSrc = this.buildEmbedSrc(url);
     this.iframe.src = embedSrc;
+    if (this.titleEl) {
+      this.titleEl.textContent = title || desc || '';
+    }
     if (this.descEl) {
-      this.descEl.textContent = desc || title || '';
+      this.descEl.textContent = desc || '';
     }
     this.overlay.classList.add('active');
     document.body.style.overflow = 'hidden';

@@ -833,6 +833,11 @@
   .timeline-item {
     position: relative;
     margin-bottom: 40px;
+    cursor: default;
+  }
+
+  .timeline-item:has(.tooltip-image) {
+    cursor: pointer;
   }
 
   .timeline-dot {
@@ -904,7 +909,8 @@
     border: 2px solid #f8bbd0;
   }
 
-  .timeline-item:hover .timeline-tooltip {
+  .timeline-item:hover .timeline-tooltip,
+  .timeline-item.tooltip-visible .timeline-tooltip {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
@@ -1273,9 +1279,17 @@
     padding: 20px 24px;
   }
 
+  .video-modal-title {
+    font-size: clamp(16px, 2vw, 20px);
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 6px 0;
+    line-height: 1.4;
+  }
+
   .video-modal-desc {
     font-size: 14px;
-    color: #666;
+    color: #999;
     line-height: 1.6;
     margin: 0;
   }
@@ -1475,7 +1489,7 @@
   .message-card {
     background: #FFE6ED;
     border-radius: 4px;
-    padding: 20px 22px;
+    padding: 0;
     box-shadow:
       2px 3px 10px rgba(0,0,0,0.05),
       0 6px 18px rgba(255, 182, 193, 0.15);
@@ -1487,15 +1501,50 @@
     break-inside: avoid;
     margin-bottom: 20px;
     transform: rotate(var(--tilt, -0.6deg));
-  }
+    perspective: 800px;
+    cursor: default;
+   }
 
-  /* 卡片悬浮状态 — 学白菜档案馆，hover 归零 */
+   .message-card.flippable {
+     cursor: pointer;
+   }
+
+  /* 卡片悬浮状态 */
   .message-card-hover {
     transform: rotate(0deg) translateY(-2px) !important;
     box-shadow:
       3px 6px 20px rgba(0,0,0,0.08),
       0 12px 30px -10px rgba(255, 182, 193, 0.3),
       0 0 0 2px rgba(255, 182, 193, 0.3) !important;
+  }
+
+  /* 3D 翻转容器 */
+  .message-card-inner {
+    position: relative;
+    width: 100%;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+    padding: 20px 22px;
+  }
+
+  .message-card-inner.flipped {
+    transform: rotateY(180deg);
+  }
+
+  .message-card-front,
+  .message-card-back {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .message-card-back {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 20px 22px;
+    transform: rotateY(180deg);
   }
 
   /* 胶带装饰 — 手撕便签风 */
@@ -1522,6 +1571,7 @@
   .message-content {
     position: relative;
     z-index: 1;
+    min-height: 3em;
   }
 
   /* 卡片底部信息栏 */
@@ -1710,6 +1760,12 @@
     background-color: rgba(255, 255, 255, 0.95);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     z-index: 31;
+  }
+
+  .danmaku-item.flipping {
+    transform: scaleX(0);
+    opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
   .danmaku-item .danmaku-name {
