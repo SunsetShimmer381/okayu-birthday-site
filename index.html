@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -206,11 +206,11 @@
               <div class="food-grid">
                 <div class="food-item">
                   <span class="food-label">好き</span>
-                  <p><span class="placeholder-text">培根、咸粥、章鱼烧、蛋炒饭、布丁、冰淇淋</span></p>
+                  <p><span class="placeholder-text">麻辣豆腐（辛い、好き）、培根、咸粥、章鱼烧、蛋包饭、布丁、冰淇淋</span></p>
                 </div>
                 <div class="food-item">
                   <span class="food-label">嫌い</span>
-                  <p><span class="placeholder-text">青椒、胡萝卜、番茄</span></p>
+                  <p><span class="placeholder-text">青椒、胡萝卜、番茄（但是不排斥番茄酱？）、大多数甜食（因为很快就会腻啦）</span></p>
                 </div>
               </div>
             </div>
@@ -460,30 +460,38 @@
 <section class="page" id="page6">
   <div class="page-inner">
     
-    <!-- 主视觉横幅 -->
-    <div class="gift-hero">
-      <div class="hero-tape"></div>
-      <div class="gift-hero-content">
-        <h2 class="gift-hero-title">特殊贈り物</h2>
-        <p class="gift-hero-sub">Special Gifts</p>
-        <p class="gift-hero-date">— 献给猫羽おかゆ —</p>
-      </div>
-    </div>
+    <!-- 标题 -->
+    <h2 class="page-title">ファン×デジタルギフト · Fan x Digital Gift</h2>
+    <p class="page-title-note">— 献给猫羽おかゆ —</p>
 
-    <!-- 三卡片展示区（图片 - 视频 - 图片） -->
+    <!-- 瀑布流卡片展示区 (6个独立卡片，3列) -->
     <div class="gift-showcase">
 
-      <!-- 左侧上：图片（毛玻璃覆盖） -->
-      <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_chou.webp" data-title="蝶のイラスト">
+      <!-- 列1-上：3:4 图片 -->
+      <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_bianhua.webp" data-title="彼岸花の手描きイラスト">
         <div class="gift-tape"></div>
         <div class="gift-card-image image-type">
-          <img src="./assets/images/gift_chou.webp" alt="蝴蝶插画"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-          <div class="img-placeholder" style="display:none;">内容準備中</div>
+          <img src="./assets/images/gift_bianhua.webp" alt="彼岸花の手描きイラスト">
           <div class="glass-overlay">
             <div class="glass-content">
               <p class="gift-card-label">ILLUSTRATION</p>
-              <h3 class="gift-card-title">チョウ手描きイラスト</h3>
+              <h3 class="gift-card-title">彼岸花の手描きイラスト</h3>
+              <p class="gift-card-desc">Happy Birthday!</p>
+              <p class="gift-card-date">2026.05.25</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列2-上：3:4 图片 -->
+      <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_chou.webp" data-title="チョウの手描きイラスト">
+        <div class="gift-tape"></div>
+        <div class="gift-card-image image-type">
+          <img src="./assets/images/gift_chou.webp" alt="チョウの手描きイラスト">
+          <div class="glass-overlay">
+            <div class="glass-content">
+              <p class="gift-card-label">ILLUSTRATION</p>
+              <h3 class="gift-card-title">チョウの手描きイラスト</h3>
               <p class="gift-card-desc">Happy Birthday!</p>
               <p class="gift-card-date">2026.05.21</p>
             </div>
@@ -491,36 +499,70 @@
         </div>
       </div>
 
-      <!-- 中间：视频 -->
-      <div class="gift-card gift-card-video" data-type="video" data-url="#" data-title="#">
-        <div class="gift-tape"></div>
-        <div class="gift-card-image video-type">
-          <img class="video-preview" src="#" alt="视频封面"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-          <div class="img-placeholder" style="display:none;">内容準備中</div>
-          <div class="video-play-overlay">
-            <div class="play-circle">PLAY</div>
-          </div>
-        </div>
-        <div class="gift-card-body">
-          <p class="gift-card-label">VIDEO</p>
-          <h3 class="gift-card-title">#</h3>
-          <p class="gift-card-desc">#</p>
-          <p class="gift-card-date">Bilibili · #</p>
-        </div>
-      </div>
-
-      <!-- 右侧下：图片预留（毛玻璃覆盖） -->
-      <div class="gift-card gift-card-img-glass gift-card-placeholder" data-type="image" data-url="" data-title="記念イラスト">
-        <div class="gift-tape" style="left:auto;right:20px;transform:rotate(-4deg);"></div>
+      <!-- 列3-上：3:4 图片 -->
+      <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_DPic.webp" data-title="D_pictureの手描きイラスト">
+        <div class="gift-tape" style="left:auto;right:20px;"></div>
         <div class="gift-card-image image-type">
-          <div class="img-placeholder" style="background:linear-gradient(145deg,#fef0f3,#faeeef);">— 内容準備中 —</div>
+          <img src="./assets/images/gift_DPic.webp" alt="D_pictureの手描きイラスト">
           <div class="glass-overlay">
             <div class="glass-content">
               <p class="gift-card-label">ILLUSTRATION</p>
-              <h3 class="gift-card-title">記念イラスト</h3>
-              <p class="gift-card-desc">Coming Soon</p>
-              <p class="gift-card-date">—</p>
+              <h3 class="gift-card-title">D_pictureの手描きイラスト</h3>
+              <p class="gift-card-desc">Happy Birthday!</p>
+              <p class="gift-card-date">2026.05.27</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列1-下：4:3 视频 -->
+      <div class="gift-card gift-card-video-glass" data-type="video" data-url="https://www.bilibili.com/video/BV1cQLJ6PEg1" data-title="【猫羽おかゆ】自制MV《快乐星猫》">
+        <div class="gift-tape" style="left:auto;right:20px;"></div>
+        <div class="gift-card-image image-horizontal">
+          <img src="./assets/images/gift_video1.webp" alt="【猫羽】自制MV《快乐星猫》">
+          <div class="video-play-overlay">
+            <div class="play-circle">PLAY</div>
+          </div>
+          <div class="glass-overlay">
+            <div class="glass-content">
+              <p class="gift-card-label">VIDEO</p>
+              <h3 class="gift-card-title">【猫羽おかゆ】自制MV《快乐星猫》</h3>
+              <p class="gift-card-desc">かくさん潇潇落叶</p>
+              <p class="gift-card-date">Bilibili</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列2-下：4:3 图片 -->
+      <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_tutu.webp" data-title="更新失敗の書道">
+        <div class="gift-tape"></div>
+        <div class="gift-card-image image-horizontal">
+          <img src="./assets/images/gift_tutu.webp" alt="更新失敗の書道">
+          <div class="glass-overlay">
+            <div class="glass-content">
+              <p class="gift-card-label">ILLUSTRATION</p>
+              <h3 class="gift-card-title">更新失敗の書道</h3>
+              <p class="gift-card-desc">Happy Birthday!</p>
+              <p class="gift-card-date">2026.05.26</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列3-下：4:3 视频 -->
+      <div class="gift-card gift-card-video-glass" data-type="video" data-url="" data-title="【预留】">
+        <div class="gift-tape" style="left:auto;right:20px;"></div>
+        <div class="gift-card-image image-horizontal">
+          <div class="video-play-overlay">
+            <div class="play-circle">PLAY</div>
+          </div>
+          <div class="glass-overlay">
+            <div class="glass-content">
+              <p class="gift-card-label">VIDEO</p>
+              <h3 class="gift-card-title">【预留】</h3>
+              <p class="gift-card-desc"></p>
+              <p class="gift-card-date">Bilibili</p>
             </div>
           </div>
         </div>
@@ -530,7 +572,8 @@
 
     <!-- 引导线 -->
     <div class="gift-divider">
-      <div class="gift-divider-text">—— 音律异界物语 · 短編小説 ——</div>
+      <div class="gift-divider-title">—— 音律异界物语 · 短編小説 ——</div>
+      <div class="gift-divider-author">著者：曦月</div>
       <div class="gift-divider-arrow">▼</div>
     </div>
 
@@ -725,7 +768,7 @@
       </p>
       <div class="credits-list">
         <div class="credits-item">
-          <span class="placeholder-text">上舰领猫娘一只，男娘一个，猫粮一袋，谢谢喵</span>
+          <span class="placeholder-text"></span>
         </div>
         <div class="credits-item">
           <span class="placeholder-text">2</span>
@@ -774,6 +817,7 @@
   </div>
 </footer>
 
+  <script src="./assets/js/danmaku-data.js"></script>
   <script src="./assets/js/main.js"></script>
 
 </body>

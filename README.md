@@ -1,281 +1,362 @@
 ## 1. 高层摘要 (TL;DR)
 
-*   **影响范围:** 🟡 **中等** - 主要是Page6页面的重构和小说模块的架构调整
+*   **影响范围:** 🟡 **中** - 涉及UI重构、移动端适配、数据模块化
 *   **核心变更:**
-    *   ✨ Page6页面从"双语对照阅读"模式重构为"章节导航+下载"模式
-    *   🗑️ 删除了构建期预对齐的`novel_data.json`及原文文件
-    *   🎨 新增手账便签风格的特殊赠礼展示区
-    *   📝 更新了时间线内容,新增"超长耐久回"和"联动"事件
-    *   🔧 修复了昵称标签样式和时间线视频链接交互
-    **尚未完成内容:**
-    *   多数信息内容未填写，视频链接、图片未上传
+    *   📱 全面优化移动端体验（导航栏、弹幕、樱花效果、留言板）
+    *   🎁 Page6 礼物页面从3卡片重构为6卡片瀑布流布局
+    *   🔧 弹幕数据模块化，移至独立文件
+    *   🎴 修复留言板3D翻转动画的高度跳动问题
+    *   🐛 修复时间轴图片查看器的点击事件
 
 ---
 
-## 2. 视觉概览 (代码与逻辑映射)
+## 2. 可视化概览 (代码与逻辑映射)
 
 ```mermaid
 graph TD
-    subgraph "Page6 页面重构"
-        A["用户访问 Page6"] --> B["特殊赠礼展示区<br/>gift-showcase"]
-        A --> C["小说章节导航区<br/>novel-section"]
-        
-        B --> B1["图片卡片<br/>gift-card-img-glass"]
-        B --> B2["视频卡片<br/>gift-card-video"]
-        B --> B3["预留卡片<br/>gift-card-placeholder"]
-        
-        C --> C1["日语章节列表<br/>novel-lang-col"]
-        C --> C2["中文章节列表<br/>novel-lang-col"]
-        
-        C1 --> D["点击浏览/下载<br/>chapter-btn"]
-        C2 --> D
+    subgraph "业务目标: 移动端体验优化"
+        A[移动端适配] --> B[导航栏换行]
+        A --> C[弹幕轨道优化]
+        A --> D[樱花效果调整]
+        A --> E[留言板分页调整]
     end
     
-    subgraph "JavaScript 交互"
-        E["GiftModalController"] --> F["处理卡片点击<br/>open()"]
-        G["VideoModalController"] --> H["时间线视频链接<br/>timeline-video-link"]
+    subgraph "业务目标: 页面重构"
+        F[Page6礼物页面] --> G[6卡片瀑布流]
+        F --> H[视频毛玻璃效果]
+        F --> I[移除横幅区域]
     end
     
-    subgraph "删除的模块"
-        I["novel_data.json<br/>238条预对齐数据"]
-        J["novel_jp.txt<br/>日文原文"]
-        K["novel_zh.txt<br/>中文翻译"]
-        L["NovelLoader<br/>加载器"]
-        M["NovelSyncController<br/>同步控制器"]
+    subgraph "业务目标: 数据模块化"
+        J[弹幕数据] --> K[独立JS文件]
     end
     
-    style B fill:#fff3e0,color:#e65100
-    style C fill:#e3f2fd,color:#0d47a1
-    style I fill:#ffcdd2,color:#c62828
-    style J fill:#ffcdd2,color:#c62828
-    style K fill:#ffcdd2,color:#c62828
+    subgraph "assets/js/main.js"
+        C --> L[DanmakuManager]
+        D --> M[SakuraEffect]
+        E --> N[MessageBoardRenderer]
+        L --> O[轨道占用检测]
+        N --> P[高度匹配动画]
+    end
+    
+    subgraph "assets/css/style.css"
+        B --> Q[.nav flex-wrap]
+        G --> R[.gift-showcase grid]
+        H --> S[.gift-card-video-glass]
+        P --> T[.message-card-inner grid]
+    end
+    
+    subgraph "index.html"
+        G --> U[6个卡片节点]
+        K --> V[script引用]
+    end
+    
+    subgraph "新文件"
+        K --> W[assets/js/danmaku-data.js]
+    end
+    
+    style A fill:#bbdefb,color:#0d47a1
+    style F fill:#fff3e0,color:#e65100
+    style J fill:#c8e6c9,color:#1a5e20
+    style L fill:#e3f2fd,color:#1565c0
+    style M fill:#e3f2fd,color:#1565c0
+    style N fill:#e3f2fd,color:#1565c0
+    style Q fill:#f3e5f5,color:#7b1fa2
+    style R fill:#f3e5f5,color:#7b1fa2
+    style S fill:#f3e5f5,color:#7b1fa2
+    style T fill:#f3e5f5,color:#7b1fa2
 ```
 
 ---
 
 ## 3. 详细变更分析
 
-### 📄 **3.1 Page6 页面重构** (`index.html`)
+### 📱 组件一: 移动端适配优化
 
-#### 🎯 **变更目标**
-将Page6从"双语对照在线阅读"模式改为"章节导航+文件下载"模式,简化实现并提升用户体验。
+#### **变更说明**
+针对 `window.innerWidth <= 768` 的设备，全面调整了动画参数、布局和交互逻辑。
 
-#### 📋 **具体变更**
+#### **核心变更点**
 
-| 组件 | 变更前 | 变更后 | 说明 |
-|------|--------|--------|------|
-| **特殊赠礼区** | 简单的3个预留卡片 | 手账便签风格的三卡片展示 | 新增毛玻璃覆盖、胶带装饰、播放按钮等 |
-| **小说展示** | 双语对照滚动阅读 | 双栏章节导航列表 | 每章提供"浏览"和"下载"按钮 |
-| **数据源** | `novel_data.json` (预对齐) | 直接链接到txt文件 | 删除了复杂的对齐逻辑 |
+| 模块 | 参数 | 桌面端 | 移动端 | 说明 |
+|------|------|--------|--------|------|
+| **弹幕轨道** | 轨道数量 | 6条 | 3条 | 减少轨道避免拥挤 |
+| **弹幕轨道** | 持续时间 | 16-24秒 | 14-20秒 | 延长移动端显示时间 |
+| **弹幕播放** | 播放间隔 | 2500ms | 5000ms | 降低频率减少性能压力 |
+| **樱花效果** | 生成间隔 | 200ms | 500ms | 降低生成频率 |
+| **樱花效果** | 字体大小 | 10-28px | 6-12px | 缩小尺寸适配小屏 |
+| **留言板** | 每页条数 | 8条 | 4条 | 减少每页内容 |
+| **导航栏** | 布局方式 | 单行滚动 | 多行换行 | 避免内容被裁切 |
 
-#### 🏗️ **新增HTML结构**
+#### **代码实现细节**
 
-```html
-<!-- 特殊赠礼展示区 -->
-<div class="gift-showcase">
-  <div class="gift-card gift-card-img-glass">...</div>  <!-- 左侧蝶的插画 -->
-  <div class="gift-card gift-card-video">...</div>      <!-- 中间:视频预留 -->
-  <div class="gift-card gift-card-placeholder">...</div> <!-- 右侧:预留 -->
-</div>
-
-<!-- 小说章节导航 -->
-<div class="novel-section">
-  <div class="novel-lang-row">
-    <div class="novel-lang-col">
-      <!-- 日语7章 -->
-      <div class="chapter-item">
-        <a href="./assets/novel/jp/01_第01章_雨夜の弦音、異世界からの来訪者.txt" 
-           class="chapter-btn" target="_blank">浏览</a>
-        <a href="..." class="chapter-btn chapter-btn-download" download>下载</a>
-      </div>
-    </div>
-    <div class="novel-lang-col">
-      <!-- 中文7章 -->
-    </div>
-  </div>
-</div>
+**弹幕轨道智能分配 (Source: `assets/js/main.js`)**
+```javascript
+// 新增轨道占用检测机制
+findFreeTrack() {
+  const start = this.nextTrack;
+  for (let i = 0; i < this.trackCount; i++) {
+    const track = (start + i) % this.trackCount;
+    if (!this.trackOccupied[track]) {
+      this.nextTrack = (track + 1) % this.trackCount;
+      return track;
+    }
+  }
+  return -1; // 所有轨道占用
+}
 ```
 
----
-
-### 🎨 **3.2 CSS 样式重构** (`assets/css/style.css`)
-
-#### 📊 **样式变更表**
-
-| 样式类 | 变更类型 | 说明 |
-|--------|----------|------|
-| `.nickname-text` → `.nickname-tags` | 重构 | 昵称从文本改为标签样式 |
-| `.timeline-video-link` | 新增 | 时间线内嵌视频链接样式 |
-| `.gift-hero` | 新增 | 主视觉横幅(手账风格) |
-| `.gift-showcase` | 新增 | 三卡片网格布局 |
-| `.gift-card` | 新增 | 礼物卡片基础样式 |
-| `.gift-tape` | 新增 | 胶带装饰 |
-| `.glass-overlay` | 新增 | 毛玻璃覆盖层 |
-| `.novel-section` | 新增 | 小说章节导航容器 |
-| `.chapter-list` | 新增 | 章节列表样式 |
-| `.download-btn` | 新增 | 下载按钮样式 |
-
-#### 🔍 **关键样式细节**
-
-**昵称标签样式:**
+**导航栏响应式布局 (Source: `assets/css/style.css`)**
 ```css
-.nickname-tags {
-  display: flex;
+/* 移动端导航栏从横向滚动改为换行布局 */
+.nav {
   flex-wrap: wrap;
-  gap: 10px;
+  white-space: normal;
+  height: auto;
+  padding: 8px 14px;
+  gap: 4px 8px;
+  row-gap: 6px;
   justify-content: center;
 }
-
-.nickname-tag {
-  padding: 5px 14px;
-  background: rgba(255, 245, 248, 0.9);
-  border: 1px solid rgba(212, 112, 138, 0.18);
-  border-radius: 20px;
-  transition: all 0.25s ease;
-}
-```
-
-**毛玻璃覆盖层:**
-```css
-.glass-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 20px 18px 16px;
-  background: linear-gradient(0deg, rgba(255,255,255,0.75) 0%, 
-                                   rgba(255,255,255,0.35) 60%, 
-                                   transparent 100%);
-  backdrop-filter: blur(2px);
-}
 ```
 
 ---
 
-### ⚙️ **3.3 JavaScript 逻辑调整** (`assets/js/main.js`)
+### 🎁 组件二: Page6 礼物页面重构
 
-#### 🔄 **GiftModalController 更新**
+#### **变更说明**
+将原来的"主横幅 + 3卡片"布局重构为"标题 + 6卡片瀑布流"布局，新增视频卡片毛玻璃效果。
 
-| 方法 | 变更内容 | 原因 |
-|------|----------|------|
-| `bindGiftItemClick()` | 选择器 `.gift-item` → `.gift-card` | 匹配新的HTML结构 |
-| `open()` | 添加 `video-mode` CSS类 | 与Page4视频弹窗保持一致 |
-| `open()` | 占位提示文本改为日文 | 风格统一 |
+#### **布局对比**
 
-#### 🗑️ **删除的代码**
+| 特性 | 旧布局 | 新布局 |
+|------|--------|--------|
+| **顶部区域** | gift-hero横幅 (带胶带装饰) | 简洁标题 + 副标题 |
+| **卡片数量** | 3个 (图片-视频-预留) | 6个 (4图片 + 2视频) |
+| **网格列数** | 1fr 1.4fr 1fr | 1fr 1fr 1fr |
+| **卡片倾斜** | 首尾卡片 ±0.6deg | 全部 0deg |
+| **视频样式** | 独立video-type | video-glass毛玻璃效果 |
 
-```javascript
-// 删除了小说加载和同步控制器
-const novelLoader = new NovelLoader({
-  onLoadComplete: () => {
-    const novelSyncController = new NovelSyncController();
-    novelSyncController.init();
-  }
-});
-await novelLoader.load();
-```
+#### **新增样式类**
 
-#### ✨ **新增功能**
-
-```javascript
-// 时间线内嵌视频链接点击处理
-document.querySelectorAll('.timeline-video-link').forEach(link => {
-  link.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    videoModalController.open({
-      title: link.dataset.title || '',
-      url: link.dataset.url || '',
-      desc: link.textContent || ''
-    });
-  });
-});
-```
-
----
-
-### 📝 **3.4 内容更新** (`index.html`)
-
-#### 🎭 **人物设定更新**
-
-| 字段 | 旧值 | 新值 |
-|------|------|------|
-| 人物描述 | `111` | `一只三岁的爱唱歌的软软猫猫哦~` |
-| 标签 | `#タグ3` | `#猫粥宝` |
-| 昵称 | `猫猫·粥酱·白粥·皮卡粥·事故势猫猫` | `ねこちゃん·おかゆちゃん·おかゆん·白粥·事故势猫猫` |
-| 口癖 | `口癖4 / 中文 / 意味/使い方` | `ははははは~ / 哈哈哈哈~ / 这健康的笑声总是响彻直播间~` |
-
-#### 📅 **时间线事件更新**
-
-| 事件 | 变更 |
+| 类名 | 用途 |
 |------|------|
-| **删除** | "涨粉潮" (2026.4.19) - 合并到"初次相遇" |
-| **修改** | "初次相遇" - 添加了视频链接,合并涨粉数据 |
-| **新增** | "超长耐久回" (2026.5.21) - 整整直播了八个小时 |
-| **新增** | "和すみれちゃん联动" (2026.5.23) - 联动直播问答 |
-| **修改** | "百舰了!" - 添加感叹号,语气更强烈 |
-| **修改** | "初配信" - 添加"实则后边也是,不愧是事故势(笑)" |
+| `.gift-card-video-glass` | 视频卡片毛玻璃容器 |
+| `.image-horizontal` | 4:3横版图片 |
+| `.video-play-overlay` | 视频播放按钮覆盖层 |
+| `.page-title-note` | 页面标题副文本 |
+| `.gift-divider-author` | 分割线作者信息 |
+
+#### **HTML结构变更 (Source: `index.html`)**
+```html
+<!-- 旧结构 -->
+<div class="gift-hero">
+  <div class="hero-tape"></div>
+  <div class="gift-hero-content">
+    <h2>特殊贈り物</h2>
+  </div>
+</div>
+<div class="gift-showcase">
+  <!-- 3个卡片 -->
+</div>
+
+<!-- 新结构 -->
+<h2 class="page-title">ファン×デジタルギフト · Fan x Digital Gift</h2>
+<p class="page-title-note">— 献给猫羽おかゆ —</p>
+<div class="gift-showcase">
+  <!-- 6个卡片: 4个图片 + 2个视频 -->
+</div>
+```
 
 ---
 
-### 🗂️ **3.5 文件删除与新增**
+### 🎴 组件三: 留言板3D翻转修复
 
-#### ❌ **删除的文件**
+#### **问题说明**
+原实现使用 `absolute` 定位，翻转时卡片高度会因内容差异跳动，导致动画不流畅。
 
-| 文件 | 大小 | 说明 |
+#### **解决方案**
+使用 CSS Grid 将正反面重叠，并在翻转前动态计算目标面高度。
+
+#### **技术实现 (Source: `assets/js/main.js`)**
+
+```javascript
+// 高度匹配函数
+matchCardHeight(card, inner, toBack) {
+  const targetFace = toBack
+    ? inner.querySelector('.message-card-back')
+    : inner.querySelector('.message-card-front');
+  const temp = targetFace.cloneNode(true);
+  temp.style.position = 'absolute';
+  temp.style.visibility = 'hidden';
+  temp.style.width = card.clientWidth + 'px';
+  temp.style.backfaceVisibility = 'visible';
+  temp.style.transform = 'none';
+  document.body.appendChild(temp);
+  const height = temp.offsetHeight;
+  document.body.removeChild(temp);
+  card.style.transition = 'height 0.3s ease';
+  card.style.height = height + 'px';
+}
+
+// 翻转事件处理
+card.addEventListener('click', () => {
+  if (inner.classList.contains('flipping')) return;
+  inner.classList.add('flipping');
+  this.matchCardHeight(card, inner, !inner.classList.contains('flipped'));
+  setTimeout(() => {
+    inner.classList.toggle('flipped');
+    this.releaseCardHeight(card, inner);
+    inner.classList.remove('flipping');
+  }, 50);
+});
+```
+
+#### **CSS变更 (Source: `assets/css/style.css`)**
+```css
+/* 从 absolute 改为 grid 重叠 */
+.message-card-inner {
+  display: grid;  /* 新增 */
+  /* position: relative;  移除 */
+  /* padding: 20px 22px;  移除 */
+}
+
+.message-card-front,
+.message-card-back {
+  grid-area: 1 / 1;  /* 新增: 重叠在同一网格 */
+  padding: 20px 22px;  /* 从 inner 移到这里 */
+}
+
+.message-card-back {
+  /* position: absolute;  移除 */
+  /* top/left/width/height 移除 */
+  transform: rotateY(180deg);
+}
+```
+
+---
+
+### 📦 组件四: 数据模块化
+
+#### **变更说明**
+将硬编码在 `main.js` 中的弹幕数据提取到独立文件 `danmaku-data.js`，便于维护和扩展。
+
+#### **文件变更**
+
+| 文件 | 操作 | 说明 |
 |------|------|------|
-| `COMPREHENSIVE_REPORT.md` | 233行 | 项目综合报告文档 |
-| `novel_data.json` | 1192行 | 中日小说预对齐数据(238条) |
-| `novel_jp.txt` | 239行 | 日文小说原文 |
-| `novel_zh.txt` | 239行 | 中文小说翻译 |
+| `assets/js/danmaku-data.js` | ✨ 新增 | 包含54条粉丝弹幕数据 |
+| `assets/js/main.js` | 🗑️ 删除 | 移除硬编码的 `sampleDanmaku` 数组 |
+| `index.html` | ➕ 添加 | 引入 `<script src="./assets/js/danmaku-data.js"></script>` |
+
+#### **数据结构示例**
+```javascript
+const sampleDanmaku = [
+  { 
+    name: '【羽川】', 
+    text: '【おかゆん、お誕生日おめでとう！...】', 
+    cnText: '【猫猫生日快乐！...】' 
+  },
+  // ... 53 more items
+];
+```
+
+---
+
+### 🐛 组件五: Bug修复
+
+#### **修复列表**
+
+| 问题 | 位置 | 修复方式 |
+|------|------|----------|
+| **时间轴图片点击失效** | `assets/js/main.js` | 修正事件委托逻辑，直接绑定到 `.tooltip-image` |
+| **HTML语法错误** | `index.html:171` | 修复 `》。` 为 `。` |
+| **语言属性错误** | `index.html:1` | `lang="ja"` 改为 `lang="zh-CN"` |
+| **光标样式冗余** | `assets/css/style.css` | 移除 `timeline-item` 的 `cursor` 相关样式 |
+
+#### **时间轴修复代码 (Source: `assets/js/main.js`)**
+```javascript
+// 旧代码
+const timelineItem = e.target.closest('.timeline-item');
+if (!timelineItem) return;
+const tooltipImage = timelineItem.querySelector('.tooltip-image');
+if (tooltipImage && tooltipImage.src) {
+  e.preventDefault();
+  this.open(tooltipImage.src, tooltipImage.alt);
+}
+
+// 新代码
+const tooltipImage = e.target.closest('.tooltip-image');
+if (!tooltipImage) return;
+e.preventDefault();
+this.open(tooltipImage.src, tooltipImage.alt);
+```
+
+---
+
+### 📄 组件六: 内容更新
+
+#### **文本内容变更 (Source: `index.html`)**
+
+| 区域 | 旧内容 | 新内容 |
+|------|--------|--------|
+| **喜好食物** | 培根、咸粥、章鱼烧、蛋炒饭、布丁、冰淇淋 | 麻辣豆腐（辛い、好き）、培根、咸粥、章鱼烧、蛋包饭、布丁、冰淇淋 |
+| **厌恶食物** | 青椒、胡萝卜、番茄 | 青椒、胡萝卜、番茄（但是不排斥番茄酱？）、大多数甜食（因为很快就会腻啦） |
+| **页脚致谢** | 上舰领猫娘一只，男娘一个，猫粮一袋，谢谢喵 | (清空) |
+
+#### **新增文件**
+- `猫粥生日祝福_双语.txt`: 包含6位粉丝的中日双语生日祝福文本
 
 ---
 
 ## 4. 影响与风险评估
 
-### ⚠️ **破坏性变更**
+### ⚠️ 潜在风险
 
-| 变更项 | 影响范围 | 风险等级 | 建议 |
-|--------|----------|----------|------|
-| 删除`novel_data.json` | Page6小说阅读功能 | 🟡 中 | 确保txt文件路径正确 |
-| 删除`NovelLoader`/`NovelSyncController` | 小说同步高亮功能 | 🟡 中 | 已替换为章节导航模式 |
-| CSS类名变更 | Page6样式 | 🟢 低 | 已同步更新HTML和JS |
+| 风险项 | 影响 | 缓解措施 |
+|--------|------|----------|
+| **弹幕轨道占用** | 高频弹幕可能全部轨道被占用导致丢弃 | 已实现 `findFreeTrack()` 智能分配，返回-1时静默丢弃 |
+| **卡片高度计算** | DOM操作可能影响性能 | 仅在翻转时计算，使用临时节点并立即移除 |
+| **移动端性能** | 樱花效果仍可能影响低端设备 | 已降低生成频率(500ms)和粒子大小 |
 
-### 🧪 **测试建议**
+### ✅ 测试建议
 
-1.  **Page6 特殊赠礼区:**
-    *   ✅ 验证图片卡片毛玻璃效果
-    *   ✅ 验证视频卡片播放按钮交互
-    *   ✅ 验证预留卡片占位符显示
+1. **移动端测试**
+   - 验证导航栏在小屏设备上正确换行
+   - 检查弹幕轨道是否拥挤（建议发送10+条弹幕测试）
+   - 测试樱花效果在低端设备的流畅度
 
-2.  **Page6 小说导航:**
-    *   ✅ 验证日语章节"浏览"按钮链接正确
-    *   ✅ 验证中文章节"下载"按钮触发下载
-    *   ✅ 验证章节悬停效果
+2. **交互测试**
+   - 点击留言板卡片，验证翻转动画无高度跳动
+   - 点击时间轴图片，确认查看器正常打开
+   - 点击视频卡片，验证播放按钮交互
 
-3.  **时间线功能:**
-    *   ✅ 验证"自我介绍视频"链接点击打开弹窗
-    *   ✅ 验证新增时间线事件显示正确
+3. **布局测试**
+   - Page6 在不同屏幕尺寸下的卡片排列
+   - 视频卡片的毛玻璃效果是否正常显示
 
-4.  **响应式布局:**
-    *   ✅ 移动端昵称标签换行正常
-    *   ✅ 小说章节列表在小屏幕上的显示
-
----
-
-## 5. 变更总结
-
-| 类别 | 变更数量 | 状态 |
-|------|----------|------|
-| **页面重构** | 1个(Page6) | ✅ 完成 |
-| **样式变更** | ~500行CSS | ✅ 完成 |
-| **逻辑调整** | ~20行JS | ✅ 完成 |
-| **内容更新** | 5处文本 | ✅ 完成 |
-| **文件删除** | 4个 | ✅ 完成 |
-| **文件新增** | 2个(备份) | ✅ 完成 |
+4. **数据测试**
+   - 验证弹幕数据正确加载
+   - 检查中日双语切换功能
 
 ---
 
-**变更时间:** 2026-05-21  
-**影响模块:** Page6、时间线、昵称显示  
-**架构调整:** 从"前端运行时对齐"切换到"静态文件+导航"模式
+## 5. 总结
+
+本次更新主要围绕 **移动端体验优化** 和 **页面结构重构** 展开：
+
+✨ **亮点改进:**
+- 弹幕系统引入智能轨道分配，避免重叠
+- 留言板翻转动画修复，体验更流畅
+- Page6 布局更丰富，从3卡片扩展到6卡片瀑布流
+- 数据模块化，便于后续维护
+
+📱 **移动端适配:**
+- 导航栏从横向滚动改为换行布局
+- 动画参数全面调整（弹幕、樱花、留言板）
+- 字体和间距优化
+
+🐛 **Bug修复:**
+- 时间轴图片点击事件修复
+- HTML语法错误修正
+- 冗余样式清理

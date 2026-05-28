@@ -280,6 +280,7 @@ class NavController {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         const pageNum = item.dataset.page;
+        this.updateActiveNav(pageNum);
         const page = document.getElementById('page' + pageNum);
         if (page) {
           page.scrollIntoView({ behavior: 'smooth' });
@@ -342,11 +343,14 @@ class DanmakuManager {
   constructor(options = {}) {
     this.container = document.getElementById('danmakuContainer');
     this.danmakus = new Set();
-    this.minDuration = options.minDuration || 10;
-    this.maxDuration = options.maxDuration || 16;
-    // 轨道系统 — 固定 6 条轨道，均匀分布
-    this.trackCount = 6;
-    this.trackTops = [8, 16, 24, 32, 40, 48]; // 6 条轨道的 top % 值
+    this.isMobile = options.isMobile || (window.innerWidth <= 768);
+    this.minDuration = options.minDuration || (this.isMobile ? 14 : 16);
+    this.maxDuration = options.maxDuration || (this.isMobile ? 20 : 24);
+    this.trackCount = this.isMobile ? 3 : 6;
+    this.trackTops = this.isMobile
+      ? [10, 28, 46]
+      : [8, 16, 24, 32, 40, 48];
+    this.trackOccupied = new Array(this.trackCount).fill(false);
     this.nextTrack = 0;
     this.init();
   }
@@ -358,8 +362,23 @@ class DanmakuManager {
     }
   }
 
+  findFreeTrack() {
+    const start = this.nextTrack;
+    for (let i = 0; i < this.trackCount; i++) {
+      const track = (start + i) % this.trackCount;
+      if (!this.trackOccupied[track]) {
+        this.nextTrack = (track + 1) % this.trackCount;
+        return track;
+      }
+    }
+    return -1;
+  }
+
   createDanmaku(name, text, cnText) {
     if (!name || !text) return null;
+
+    const track = this.findFreeTrack();
+    if (track === -1) return null;
 
     const el = document.createElement('div');
     el.className = 'danmaku-item';
@@ -373,12 +392,13 @@ class DanmakuManager {
     el.dataset.cnText = escapedCnText;
     el.dataset.lang = 'jp';
     el.dataset.name = escapedName;
+    el.dataset.track = String(track);
     
-    el.style.top = `${this.trackTops[this.nextTrack % this.trackCount]}vh`;
-    this.nextTrack++;
+    el.style.top = `${this.trackTops[track]}vh`;
     
     el.style.animationDuration = `${this.minDuration + Math.random() * (this.maxDuration - this.minDuration)}s`;
-    
+
+    this.trackOccupied[track] = true;
     this.danmakus.add(el);
     this.container.appendChild(el);
 
@@ -412,6 +432,10 @@ class DanmakuManager {
 
   removeDanmaku(el) {
     if (this.danmakus.has(el)) {
+      const track = parseInt(el.dataset.track, 10);
+      if (!isNaN(track) && track < this.trackCount) {
+        this.trackOccupied[track] = false;
+      }
       this.danmakus.delete(el);
       el.remove();
     }
@@ -422,26 +446,6 @@ class DanmakuManager {
     this.danmakus.clear();
   }
 }
-
-// 弹幕数据（留言板示例数据）
-const sampleDanmaku = [
-  { name: '【曦月】', text: '【おかゆんもファンのみんなも、規則正しい生活を大事にして、元気いっぱい楽しく健康にずっと歩んでいってほしい。その盛大な未来、僕もこの目で見届けたいから。】', cnText: '【希望Okayun和粉丝们都能保持良好的作息，健健康康快快乐乐元气满满的一直走下去，我还想见证那个盛大的未来呢。】' },
-  { name: '【北斗肥龙】', text: '【フェイロンと一緒に世界を制覇しよう！】', cnText: '【和肥龙一起统治世界！】' },
-  { name: '【千代時雨】', text: '【おかゆちゃんやみんなと出会えて、本当に良かったニャ〜】', cnText: '【能和おかゆちゃん、大家相遇真是太好了喵~】' },
-  { name: '【菟丝子】', text: '【うさぎさんです。おかゆんのことが大好き！！！おかゆんならきっと成功できるって信じてる！！！絶対に夢を叶えられる！！！ずっとずっとずっと応援してるからね、おかゆん！！！】', cnText: '【这里是うさぎさん，我最喜欢おかゆん了！！！我相信おかゆん一定能成功的！！！一定可以实现自己的梦想的！！！我会一直一直一直支持你おかゆん！！！】' },
-  { name: '【暮雪】', text: '【おかゆちゃんを推せて嬉しい。おかゆちゃんも、みんなも、素敵な思い出をたくさん残せますように！】', cnText: '【很高兴能推小粥，希望猫粥宝和小粥都能留下一段美好的时光！】' },
-  { name: '【雪風】', text: '【おかゆちゃん、これからは風も水も順調で、ツイてることばっかり。これがボク雪風からの祝福だから、ありがたく受け取りなにゃ！】', cnText: '【粥酱，愿此后风调雨顺、万事顺遂，好运常伴左右。这是我雪风送上的祝福，可要好好收下哦喵～】' },
-  { name: '【Alex】', text: '【白粥ちゃん、楽しく暮らして、楽しく配信してね。みんな白粥ちゃんのそばにいるよ！】', cnText: '【白粥要快快乐乐生活，快快乐乐直播，大家都会陪着白粥的!】' },
-  { name: '【若葉チョウ】', text: '【NMT! NMT! 猫羽おかゆちゃん マジ 天才!! 猫羽おかゆちゃん マジ 天使!!】', cnText: '【奇才天纵!!天使降临!!——猫羽粥酱！!】' },
-  { name: '【更新失敗】', text: '【白粥ちゃん、こんにちは。君の時間を無駄にしてるんだ。しかも、成功したよ。】', cnText: '【白粥你好，我在浪费你的时间，而且我成功了。】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' },
-  { name: '【空白】', text: '【ここにご自身のメッセージを入力してください】', cnText: '【请在此输入您的留言】' }
-];
 
 // 初始化弹幕管理器
 const danmakuManager = new DanmakuManager({
@@ -454,7 +458,7 @@ class MessageBoardRenderer {
   constructor(data) {
     this.data = this.sanitizeData(data) || [];
     this.currentPage = 1;
-    this.itemsPerPage = 8;
+    this.itemsPerPage = window.innerWidth <= 768 ? 4 : 8;
     this.elements = null;
     this._prevPageHandler = null;
     this._nextPageHandler = null;
@@ -591,7 +595,14 @@ class MessageBoardRenderer {
     if (item.cnText) {
       card.classList.add('flippable');
       card.addEventListener('click', () => {
-        inner.classList.toggle('flipped');
+        if (inner.classList.contains('flipping')) return;
+        inner.classList.add('flipping');
+        this.matchCardHeight(card, inner, !inner.classList.contains('flipped'));
+        setTimeout(() => {
+          inner.classList.toggle('flipped');
+          this.releaseCardHeight(card, inner);
+          inner.classList.remove('flipping');
+        }, 50);
       });
     }
 
@@ -606,6 +617,29 @@ class MessageBoardRenderer {
     });
 
     return card;
+  }
+
+  matchCardHeight(card, inner, toBack) {
+    const targetFace = toBack
+      ? inner.querySelector('.message-card-back')
+      : inner.querySelector('.message-card-front');
+    const temp = targetFace.cloneNode(true);
+    temp.style.position = 'absolute';
+    temp.style.visibility = 'hidden';
+    temp.style.width = card.clientWidth + 'px';
+    temp.style.backfaceVisibility = 'visible';
+    temp.style.transform = 'none';
+    document.body.appendChild(temp);
+    const height = temp.offsetHeight;
+    document.body.removeChild(temp);
+    card.style.transition = 'height 0.3s ease';
+    card.style.height = height + 'px';
+  }
+
+  releaseCardHeight(card, inner) {
+    setTimeout(() => {
+      card.style.transition = '';
+    }, 350);
   }
 
   createCardFace(item, face) {
@@ -756,7 +790,8 @@ class DanmakuAutoPlayer {
   constructor(manager, data, options = {}) {
     this.manager = manager;
     this.data = data || [];
-    this.interval = options.interval || 3000;
+    const isMobile = window.innerWidth <= 768;
+    this.interval = options.interval || (isMobile ? 5000 : 2500);
     this.startDelay = null;
     this.intervalId = null;
   }
@@ -941,10 +976,13 @@ const danmakuModeController = new DanmakuModeController();
 // ===== 樱花飘落效果 =====
 class SakuraEffect {
   constructor(options = {}) {
-    this.interval = options.interval || 200;
-    this.lifetime = options.lifetime || 15000;
-    this.minDuration = options.minDuration || 6;
-    this.maxDuration = options.maxDuration || 14;
+    const isMobile = window.innerWidth <= 768;
+    this.interval = options.interval || (isMobile ? 500 : 200);
+    this.lifetime = options.lifetime || (isMobile ? 12000 : 15000);
+    this.minDuration = options.minDuration || (isMobile ? 8 : 6);
+    this.maxDuration = options.maxDuration || (isMobile ? 18 : 14);
+    this.minFontSize = isMobile ? 6 : 10;
+    this.maxFontSize = isMobile ? 12 : 28;
     this.flowerTypes = ['❀', '✿', '❁', '✾', '❃', '✿'];
     this.flowerColors = ['#ffb7c5', '#ffc0cb', '#f8b4c4', '#e89bb3', '#d4708a', '#f5a3b5'];
     this.intervalId = null;
@@ -965,7 +1003,7 @@ class SakuraEffect {
     
     sakura.innerHTML = randomType;
     sakura.style.left = `${Math.random() * 100}vw`;
-    sakura.style.fontSize = `${10 + Math.random() * 18}px`;
+    sakura.style.fontSize = `${this.minFontSize + Math.random() * (this.maxFontSize - this.minFontSize)}px`;
     sakura.style.opacity = `${0.3 + Math.random() * 0.5}`;
     sakura.style.color = randomColor;
     sakura.style.animationDuration = `${this.minDuration + Math.random() * (this.maxDuration - this.minDuration)}s`;
@@ -1537,14 +1575,11 @@ class TimelineImageViewer {
     timelineWrapper.addEventListener('click', (e) => {
       if (e.target.closest('.timeline-video-link')) return;
 
-      const timelineItem = e.target.closest('.timeline-item');
-      if (!timelineItem) return;
+      const tooltipImage = e.target.closest('.tooltip-image');
+      if (!tooltipImage) return;
 
-      const tooltipImage = timelineItem.querySelector('.tooltip-image');
-      if (tooltipImage && tooltipImage.src) {
-        e.preventDefault();
-        this.open(tooltipImage.src, tooltipImage.alt);
-      }
+      e.preventDefault();
+      this.open(tooltipImage.src, tooltipImage.alt);
     });
 
     // 关闭按钮点击
