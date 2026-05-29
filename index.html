@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>猫羽おかゆ お誕生日</title>
-  <link rel="icon" href="data:,">
+  <link rel="icon" href="./assets/images/favicon.ico">
   <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
@@ -29,7 +29,7 @@
 <audio id="bgMusic" loop>
   <source src="./assets/audio/background_music.mp3" type="audio/mpeg">
   <source src="./assets/audio/background_music.ogg" type="audio/ogg">
-</audio></audio>
+</audio>
 
 <!-- 视频播放器悬浮窗口 -->
 <div class="video-modal-overlay" id="videoModalOverlay">
@@ -57,7 +57,7 @@
   <span class="nav-separator">·</span>
   <span class="nav-item" data-page="5">メッセージ</span>
   <span class="nav-separator">·</span>
-  <span class="nav-item" data-page="6">特殊贈り物</span>
+  <span class="nav-item" data-page="6">デジタルギフト</span>
   <span class="nav-separator">·</span>
   <span class="nav-item" data-page="7">謝辞</span>
 </nav>
@@ -70,7 +70,7 @@
         <p class="birthday-text">Birthday</p>
         <div class="name-container">
           <span class="name-line-1">猫羽</span>
-          <span class="name-line-2"><p>おかゆ</p></span>
+          <span class="name-line-2"><span class="name-highlight">おかゆ</span></span>
         </div>
         <p class="romaji-text">Nekoha Okayu / 猫粥 / 白粥</p>
         <p class="profile-text">2026年4月末のデビュー以来、今もこれからも、みんな家族ー！</p>
@@ -119,7 +119,7 @@
 <!-- Page2 - 详情页 -->
 <section class="page" id="page2">
   <div class="page-inner">
-    <h2 class="page-title">この世界で一番可愛い猫ちゃんについて</h2>
+    <h2 class="page-title">アーカイブ · Profile Archive</h2>
     
     <div class="profile-container">
       <!-- 左侧区域 -->
@@ -234,11 +234,11 @@
               </div>
               <div class="phrase-item">
                 <div class="phrase-main">
-                  <span class="phrase-jp"><span class="placeholder-text">あいうえお</span></span>
+                  <span class="phrase-jp"><span class="placeholder-text">わん しあん ほ</span></span>
                   <span class="phrase-sep">·</span>
-                  <span class="phrase-cn"><span class="placeholder-text">a i u e o</span></span>
+                  <span class="phrase-cn"><span class="placeholder-text">晚上好</span></span>
                 </div>
-                <span class="phrase-usage"><span class="placeholder-text">喂喂喂！字幕君怎么又坏了！(不过换了新的字幕君后好像就很少说了)</span></span>
+                <span class="phrase-usage"><span class="placeholder-text">“晚上好~”，这是开播以来说的最标准的中文——字正腔圆</span></span>
               </div>
               <div class="phrase-item">
                 <div class="phrase-main">
@@ -267,7 +267,7 @@
 <!-- Page3 - 时间线 -->
 <section class="page" id="page3">
   <div class="page-inner">
-    <h2 class="page-title">猫羽おかゆの軌跡</h2>
+    <h2 class="page-title">軌跡 · Timeline</h2>
     <div class="timeline-wrapper">
       <div class="timeline">
         <div class="timeline-item">
@@ -384,7 +384,38 @@
             <p class="video-desc">罵られてドM発動！</p>
           </div>
         </div>
+        <div class="video-card video-more-hidden" data-title="日本萝莉猫猫对观众又亲又舔🥰" data-url="https://www.bilibili.com/video/BV1uVGR6KEPG" data-desc="ちゅ～ちゅ～">
+          <div class="video-thumbnail">
+            <img src="./assets/images/video_4.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">01:34</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">日本萝莉猫猫对观众又亲又舔🥰</h3>
+            <p class="video-desc">ちゅ～ちゅ～</p>
+          </div>
+        </div>
+        <div class="video-card video-more-hidden" data-title="吹泡泡一分钟～" data-url="https://www.bilibili.com/video/BV1zUL46EEoK" data-desc="ふわふわ泡泡～">
+          <div class="video-thumbnail">
+            <img src="./assets/images/video_5.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">01:09</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">『猫羽おかゆ』吹泡泡一分钟～</h3>
+            <p class="video-desc">ふわふわ泡泡～</p>
+          </div>
+        </div>
+        <div class="video-card video-more-hidden" data-title="Kiss kiss mua～" data-url="https://www.bilibili.com/video/BV1LZL46VE2i" data-desc="Kiss kiss～mua!">
+          <div class="video-thumbnail">
+            <img src="./assets/images/video_6.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">01:14</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">『猫羽おかゆ』Kiss kiss mua～</h3>
+            <p class="video-desc">Kiss kiss～mua!</p>
+          </div>
+        </div>
       </div>
+      <button class="video-load-more" id="videoLoadMoreBtn">查看更多 ▾</button>
     </div>
     
     <!-- 第二部分：猫的歌声 -->
@@ -415,14 +446,14 @@
             <p class="video-desc">キミを见てるといつもハートDOKI☆DOKI</p>
           </div>
         </div>
-        <div class="video-card" data-title="翻唱歌曲3" data-url="https://www.bilibili.com/video/BV1xx411c7mD" data-desc="深情演唱">
+        <div class="video-card" data-title="白金ディスコ" data-url="https://www.bilibili.com/video/BV111RtBoEf4" data-desc="初めて知った この永远を君に誓うよ">
           <div class="video-thumbnail">
-            <img src="" alt="视频封面" class="video-cover">
-            <div class="video-duration">00:00</div>
+            <img src="./assets/images/song_3.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">04:44</div>
           </div>
           <div class="video-info">
-            <h3 class="video-title">翻唱歌曲3</h3>
-            <p class="video-desc">深情演唱</p>
+            <h3 class="video-title">白金ディスコ</h3>
+            <p class="video-desc">初めて知った この永远を君に誓うよ</p>
           </div>
         </div>
       </div>
@@ -485,7 +516,7 @@
 
       <!-- 列2-上：3:4 图片 -->
       <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_chou.webp" data-title="チョウの手描きイラスト">
-        <div class="gift-tape"></div>
+        <div class="gift-tape gift-tape--center"></div>
         <div class="gift-card-image image-type">
           <img src="./assets/images/gift_chou.webp" alt="チョウの手描きイラスト">
           <div class="glass-overlay">
@@ -501,7 +532,7 @@
 
       <!-- 列3-上：3:4 图片 -->
       <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_DPic.webp" data-title="D_pictureの手描きイラスト">
-        <div class="gift-tape" style="left:auto;right:20px;"></div>
+        <div class="gift-tape gift-tape--right"></div>
         <div class="gift-card-image image-type">
           <img src="./assets/images/gift_DPic.webp" alt="D_pictureの手描きイラスト">
           <div class="glass-overlay">
@@ -517,7 +548,7 @@
 
       <!-- 列1-下：4:3 视频 -->
       <div class="gift-card gift-card-video-glass" data-type="video" data-url="https://www.bilibili.com/video/BV1cQLJ6PEg1" data-title="【猫羽おかゆ】自制MV《快乐星猫》">
-        <div class="gift-tape" style="left:auto;right:20px;"></div>
+        <div class="gift-tape"></div>
         <div class="gift-card-image image-horizontal">
           <img src="./assets/images/gift_video1.webp" alt="【猫羽】自制MV《快乐星猫》">
           <div class="video-play-overlay">
@@ -536,7 +567,7 @@
 
       <!-- 列2-下：4:3 图片 -->
       <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_tutu.webp" data-title="更新失敗の書道">
-        <div class="gift-tape"></div>
+        <div class="gift-tape gift-tape--center"></div>
         <div class="gift-card-image image-horizontal">
           <img src="./assets/images/gift_tutu.webp" alt="更新失敗の書道">
           <div class="glass-overlay">
@@ -552,7 +583,7 @@
 
       <!-- 列3-下：4:3 视频 -->
       <div class="gift-card gift-card-video-glass" data-type="video" data-url="" data-title="【预留】">
-        <div class="gift-tape" style="left:auto;right:20px;"></div>
+        <div class="gift-tape gift-tape--right"></div>
         <div class="gift-card-image image-horizontal">
           <div class="video-play-overlay">
             <div class="play-circle">PLAY</div>
@@ -571,29 +602,67 @@
     </div>
 
     <!-- 引导线 -->
-    <div class="gift-divider">
-      <div class="gift-divider-title">—— 音律异界物语 · 短編小説 ——</div>
-      <div class="gift-divider-author">著者：曦月</div>
-      <div class="gift-divider-arrow">▼</div>
+    <div class="book-divider">
+      <div class="book-divider-title">音律异界物语</div>
+      <div class="book-divider-sub">短編小説 · 著者：曦月</div>
     </div>
 
     <!-- 小说章节导航 -->
     <div class="novel-section">
 
       <div class="novel-header">
-        <h3>音律异界物语</h3>
-        <p>全七章 · 点击章节在线浏览或下载小说文件</p>
+        <p class="novel-header-subtitle">全七章 · 点击章节在线浏览或下载小说文件</p>
+      </div>
+
+      <div class="novel-synopsis" id="novelSynopsis">
+        <div class="novel-synopsis-inner">
+          <div class="novel-synopsis-cn">
+            <p class="novel-synopsis-lead">—— 故事梗概 ——</p>
+            <p>
+              雨夜，猫耳少女<b>猫羽粥</b>在公寓里弹着吉他，被一道神秘白光卷入异世界——一个以音乐为力量源泉的<b>音乐之国</b>。
+              在这里，旋律可以化作利刃，音符能够凝聚为护盾。
+              她在骑士团长<b>布朗尼</b>与鼓手<b>llingking</b>的帮助下，拜入精灵导师<b>普莉姆拉</b>门下，
+              仅用七日便掌握了音律化武之力。
+            </p>
+            <p>
+              为寻找音乐之神遗留的圣物<b>「彼岸花」</b>，猫羽粥与骑士<b>芙宁蝶</b>、侦察队长<b>梅林</b>、伙伴<b>时雨</b>一同航向冰火双岛。
+              在极寒与灼热交织的险境中，她们遭遇了巫师团<b>「七宗罪」</b>之一的嫉妒之罪·空白。
+              生死之战中，曾是敌人的少年<b>拾玥</b>选择了反抗黑暗，以自身重伤换来同伴的生机。
+            </p>
+            <p>
+              彼岸花灵化作两根琴弦融入猫羽粥的吉他——冰蓝与赤红，象征双岛之力。
+              众人齐聚王城，在国王<b>羽川</b>的见证下，拾玥揭开了巫师团首领深不可测的真相。
+              远征的号角已然吹响，对抗七宗罪、拯救世界的序曲，才刚刚奏响。
+            </p>
+          </div>
+          <div class="novel-synopsis-jp">
+            <p class="novel-synopsis-lead">—— あらすじ ——</p>
+            <p>
+              雨の夜、猫耳の少女<b>猫羽おかゆ</b>がアパートでギターを弾いていると、謎の白い光に包まれ異世界へ——そこは音楽が力の源となる<b>「音楽の国」</b>だった。
+              旋律は刃となり、音符は盾となる。
+              騎士団長<b>ブラウニー</b>と太鼓の達人<b>llingking</b>の助けを得て、エルフの師<b>プリー厶ラ</b>の門下に入り、
+              わずか七日で音律化武の力を身につけた。
+            </p>
+            <p>
+              音楽の神が遺した聖物<b>「彼岸花」</b>を求めて、猫羽粥は騎士<b>フーニンディエ</b>、偵察隊長<b>メイリン</b>、仲間<b>シグレ</b>と共に氷と炎の双島へ航海する。
+              極寒と灼熱が交錯する危険な地で、彼女たちは魔術師団<b>「七つの大罪」</b>の一員、嫉妬の罪・<b>クウハク</b>と遭遇。
+              生死を賭けた戦いの中、かつて敵だった少年<b>シーユエ</b>は闇に抗うことを選び、自らの重傷と引き換えに仲間を救った。
+            </p>
+            <p>
+              彼岸花の精霊は二本の弦となり猫羽粥のギターに宿る——氷青と紅蓮、双島の力を象徴して。
+              王城に集結した仲間たち、国王<b>ウカワ</b>の見守る中、シーユエは魔術師団の首領の計り知れない真実を明かした。
+              遠征の角笛はすでに鳴り響き、七つの大罪に立ち向かい世界を救う序曲が、今まさに奏でられ始めたのだ。
+            </p>
+          </div>
+        </div>
+        <div class="novel-synopsis-hint" id="novelSynopsisHint">日本語で読む ▸</div>
       </div>
 
       <div class="novel-lang-row">
 
         <!-- 日语（七章） -->
         <div class="novel-lang-col">
-          <div class="novel-lang-header">
-            <span class="lang-dot jp"></span>
-            <span class="lang-name">日本語</span>
-            <span class="lang-action">Japanese</span>
-          </div>
+          <div class="novel-lang-label">日本語 <span>Japanese</span></div>
           <div class="chapter-list">
             <div class="chapter-item">
               <span class="chapter-number">#01</span>
@@ -656,11 +725,7 @@
 
         <!-- 中文（七章） -->
         <div class="novel-lang-col">
-          <div class="novel-lang-header">
-            <span class="lang-dot zh"></span>
-            <span class="lang-name">中文</span>
-            <span class="lang-action">Chinese</span>
-          </div>
+          <div class="novel-lang-label">中文 <span>Chinese</span></div>
           <div class="chapter-list">
             <div class="chapter-item">
               <span class="chapter-number">#01</span>
@@ -725,19 +790,11 @@
 
       <!-- 整本下载区 -->
       <div class="novel-download-area">
-        <p>下载完整小说</p>
-        <div class="download-buttons">
-          <a href="./assets/novel/jp/full.txt" class="download-btn" download>日本語 全文 .txt</a>
-          <a href="./assets/novel/cn/full.txt" class="download-btn" download>中文全文 .txt</a>
-        </div>
+        <p class="novel-download-hint">下载完整小说</p>
+        <a href="./assets/novel/jp/full.txt" class="novel-download-link" download>日本語 全文 .txt</a>
+        <a href="./assets/novel/cn/full.txt" class="novel-download-link" download>中文全文 .txt</a>
       </div>
 
-    </div>
-
-    <!-- 小说内容容器（保留原有id以供旧版JS兼容） -->
-    <div style="display:none;">
-      <div class="novel-content" id="novelJapanese"></div>
-      <div class="novel-content" id="novelChinese"></div>
     </div>
 
   </div>

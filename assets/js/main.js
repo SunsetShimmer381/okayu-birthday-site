@@ -8,21 +8,19 @@ const Utils = {
     return div.innerHTML;
   },
 
-  // 格式化时间
-  formatTime(hours, mins) {
-    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-  },
-
-  // 验证B站视频URL
-  validateBilibiliUrl(url) {
-    const pattern = /^https?:\/\/www\.bilibili\.com\/video\/BV[a-zA-Z0-9]{10}(\/.*)?$/;
-    return pattern.test(url);
-  },
-
   // 提取B站视频BV号
   extractBvid(url) {
     const match = url.match(/BV[a-zA-Z0-9]{10}/);
     return match ? match[0] : null;
+  },
+
+  // 构建B站视频嵌入URL
+  buildBilibiliEmbedUrl(url, autoplay = 0) {
+    const bvid = this.extractBvid(url);
+    if (bvid) {
+      return `//player.bilibili.com/player.html?bvid=${bvid}&autoplay=${autoplay}&high_quality=1&danmaku=0`;
+    }
+    return url || '';
   }
 };
 
@@ -59,10 +57,10 @@ class CountdownController {
   getNextTargetDate() {
     const now = new Date();
     const currentYear = now.getFullYear();
-    let targetDate = new Date(currentYear, this.targetMonth, this.targetDay);
+    let targetDate = new Date(currentYear, this.targetMonth, this.targetDay, 23, 59, 59, 999);
 
     if (now > targetDate) {
-      targetDate.setFullYear(currentYear + 1);
+      targetDate = new Date(currentYear + 1, this.targetMonth, this.targetDay, 23, 59, 59, 999);
     }
 
     return targetDate;
@@ -235,12 +233,6 @@ class ImageSlider {
     }
   }
 
-  goTo(index) {
-    if (index < 0 || index >= this.images.length || this.isTransitioning) return;
-    this.currentIndex = index;
-    this.elements.main.src = this.images[index];
-  }
-
   destroy() {
     this.stopAutoPlay();
     this.elements = null;
@@ -338,20 +330,25 @@ class NavController {
 // 初始化导航控制器
 const navController = new NavController({ threshold: 0.5 });
 
-// ===== 弹幕管理器 =====
+// ===== 弹幕管理器（无轨道自由浮动版）=====
+// 参考：参考网站采用随机位置+独立运动，各弹幕互不干扰
 class DanmakuManager {
   constructor(options = {}) {
     this.container = document.getElementById('danmakuContainer');
     this.danmakus = new Set();
     this.isMobile = options.isMobile || (window.innerWidth <= 768);
-    this.minDuration = options.minDuration || (this.isMobile ? 14 : 16);
-    this.maxDuration = options.maxDuration || (this.isMobile ? 20 : 24);
-    this.trackCount = this.isMobile ? 3 : 6;
-    this.trackTops = this.isMobile
-      ? [10, 28, 46]
-      : [8, 16, 24, 32, 40, 48];
-    this.trackOccupied = new Array(this.trackCount).fill(false);
-    this.nextTrack = 0;
+    // 弹幕持续时间（秒），每个弹幕独立随机
+    // 桌面 14~22 秒，移动端 11~18 秒
+    this.minDuration = options.minDuration || (this.isMobile ? 11 : 14);
+    this.maxDuration = options.maxDuration || (this.isMobile ? 18 : 22);
+    // 弹幕在容器高度范围内随机发射，容器 overflow:hidden 自动裁切超出部分
+    // 最多同时显示的弹幕数，防止拥堵
+    this.maxVisible = options.maxVisible || (this.isMobile ? 15 : 30);
+    // 去重池：记录最近弹幕指纹，避免短期重复
+    this._dedupPool = [];
+    this._dedupSize = options.dedupSize || 5;
+    // 暂停状态
+    this._paused = false;
     this.init();
   }
 
@@ -362,45 +359,51 @@ class DanmakuManager {
     }
   }
 
-  findFreeTrack() {
-    const start = this.nextTrack;
-    for (let i = 0; i < this.trackCount; i++) {
-      const track = (start + i) % this.trackCount;
-      if (!this.trackOccupied[track]) {
-        this.nextTrack = (track + 1) % this.trackCount;
-        return track;
-      }
-    }
-    return -1;
-  }
-
+  /**
+   * 发射一条弹幕。每条弹幕随机垂直位置+随机duration，互不干涉。
+   * 如果当前可见弹幕已达上限则跳过。
+   */
   createDanmaku(name, text, cnText) {
     if (!name || !text) return null;
+    if (this._paused) return null;
+    // 已达上限，跳过
+    if (this.danmakus.size >= this.maxVisible) return null;
+    // 去重
+    if (this._isDuplicate(text)) return null;
+    this._recordSent(text);
 
-    const track = this.findFreeTrack();
-    if (track === -1) return null;
+    const durationSec = this.minDuration + Math.random() * (this.maxDuration - this.minDuration);
+    // top% 在容器高度范围内随机发射，容器 overflow:hidden 自动裁切
+    const topPct = Math.random() * 100;
+    return this._emit(name, text, cnText, topPct, durationSec);
+  }
 
+  _emit(name, text, cnText, topPct, durationSec) {
     const el = document.createElement('div');
     el.className = 'danmaku-item';
-    
+
     const escapedName = Utils.escapeHtml(name);
     const escapedText = Utils.escapeHtml(text);
     const escapedCnText = cnText ? Utils.escapeHtml(cnText) : '';
-    
+
     el.innerHTML = `<span class="danmaku-name">${escapedName}</span><span class="danmaku-text">| ${escapedText}</span>`;
     el.dataset.text = escapedText;
     el.dataset.cnText = escapedCnText;
     el.dataset.lang = 'jp';
     el.dataset.name = escapedName;
-    el.dataset.track = String(track);
-    
-    el.style.top = `${this.trackTops[track]}vh`;
-    
-    el.style.animationDuration = `${this.minDuration + Math.random() * (this.maxDuration - this.minDuration)}s`;
+    el.dataset.duration = durationSec;
 
-    this.trackOccupied[track] = true;
+    // 弹幕 position:fixed 挂到 body，不受容器高度限制
+    // topPct 相对于视口高度（容器 top + topPct% 容器高度）
+    const containerTop = this.container.getBoundingClientRect().top;
+    const containerHeight = this.container.offsetHeight;
+    const absoluteTop = containerTop + (containerHeight * topPct / 100);
+    el.style.top = `${absoluteTop}px`;
+    el.style.position = 'fixed';
+    el.style.animationDuration = `${durationSec}s`;
+
     this.danmakus.add(el);
-    this.container.appendChild(el);
+    document.body.appendChild(el);
 
     if (escapedCnText) {
       el.addEventListener('click', (e) => {
@@ -408,11 +411,11 @@ class DanmakuManager {
         this.flipDanmaku(el);
       });
     }
-    
+
     el.addEventListener('animationend', () => {
       this.removeDanmaku(el);
-    });
-    
+    }, { once: true });
+
     return el;
   }
 
@@ -423,6 +426,7 @@ class DanmakuManager {
     const escapedName = el.dataset.name;
 
     setTimeout(() => {
+      if (!this.danmakus.has(el)) return;
       const newText = isJp ? el.dataset.cnText : el.dataset.text;
       el.innerHTML = `<span class="danmaku-name">${escapedName}</span><span class="danmaku-text">| ${newText}</span>`;
       el.dataset.lang = isJp ? 'cn' : 'jp';
@@ -431,27 +435,56 @@ class DanmakuManager {
   }
 
   removeDanmaku(el) {
-    if (this.danmakus.has(el)) {
-      const track = parseInt(el.dataset.track, 10);
-      if (!isNaN(track) && track < this.trackCount) {
-        this.trackOccupied[track] = false;
-      }
-      this.danmakus.delete(el);
-      el.remove();
+    if (!this.danmakus.has(el)) return;
+    this.danmakus.delete(el);
+    el.remove();
+  }
+
+  // ===== 去重 =====
+  _isDuplicate(text) {
+    const key = text.trim().slice(0, 20);
+    return this._dedupPool.includes(key);
+  }
+
+  _recordSent(text) {
+    const key = text.trim().slice(0, 20);
+    this._dedupPool.push(key);
+    if (this._dedupPool.length > this._dedupSize) {
+      this._dedupPool.shift();
     }
   }
 
-  destroy() {
+  // ===== 暂停/恢复（只控制播放器发射，不干涉已发射弹幕动画）=====
+  pause() {
+    this._paused = true;
+  }
+
+  resume() {
+    this._paused = false;
+  }
+
+  hideAll() {
+    this.danmakus.forEach(el => { el.style.visibility = 'hidden'; });
+  }
+
+  showAll() {
+    this.danmakus.forEach(el => { el.style.visibility = ''; });
+  }
+
+  clear() {
     this.danmakus.forEach(el => el.remove());
     this.danmakus.clear();
+    this._dedupPool = [];
+  }
+
+  destroy() {
+    this.clear();
+    this.container = null;
   }
 }
 
 // 初始化弹幕管理器
-const danmakuManager = new DanmakuManager({
-  minDuration: 16,  // 最小 16 秒（原来是 10）
-  maxDuration: 24   // 最大 24 秒（原来是 16）
-});
+const danmakuManager = new DanmakuManager();
 
 // ===== 留言板渲染器（支持分页）=====
 class MessageBoardRenderer {
@@ -781,47 +814,33 @@ class MessageBoardRenderer {
   }
 }
 
-// ===== 弹幕发送器（已移除）=====
-// 由于项目中没有弹幕发送表单，此类已删除
-// 如需添加弹幕发送功能，请添加相应的HTML表单元素并恢复此类
-
-// ===== 弹幕自动播放器 =====
+// ===== 弹幕自动播放器（简化版）=====
 class DanmakuAutoPlayer {
   constructor(manager, data, options = {}) {
     this.manager = manager;
     this.data = data || [];
     const isMobile = window.innerWidth <= 768;
-    this.interval = options.interval || (isMobile ? 5000 : 2500);
-    this.startDelay = null;
+    this.interval = options.interval || (isMobile ? 4000 : 2000);
     this.intervalId = null;
   }
 
   start() {
-    if (this.intervalId || this.startDelay) return;
+    if (this.intervalId) return;
     if (this.data.length === 0) return;
 
-    // 首次延迟 800ms，然后开始密集发射
-    this.startDelay = setTimeout(() => {
-      this.startDelay = null;
-      this.sendNext();
-
-      this.intervalId = setInterval(() => {
-        this.sendNext();
-      }, this.interval);
-    }, 800);
+    this.intervalId = setInterval(() => {
+      this._emitOne();
+    }, this.interval);
   }
 
-  sendNext() {
-    const randomIndex = Math.floor(Math.random() * this.data.length);
-    const item = this.data[randomIndex];
+  _emitOne() {
+    if (this.data.length === 0) return;
+    const idx = Math.floor(Math.random() * this.data.length);
+    const item = this.data[idx];
     this.manager.createDanmaku(item.name, item.text, item.cnText);
   }
 
   stop() {
-    if (this.startDelay) {
-      clearTimeout(this.startDelay);
-      this.startDelay = null;
-    }
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
@@ -835,11 +854,8 @@ class DanmakuAutoPlayer {
   }
 }
 
-// 弹幕发送器（已移除）
-// 如需添加弹幕发送功能，请先添加相应的HTML表单元素，然后恢复DanmakuSender类
-
 // 初始化弹幕自动播放器
-const danmakuAutoPlayer = new DanmakuAutoPlayer(danmakuManager, sampleDanmaku, { interval: 2500 });
+const danmakuAutoPlayer = new DanmakuAutoPlayer(danmakuManager, sampleDanmaku);
 danmakuAutoPlayer.start();
 
 // 渲染留言板
@@ -882,7 +898,9 @@ class MusicPlayer {
   }
 
   play() {
-    this.audio.play().catch(() => {});
+    this.audio.play().catch((err) => {
+      console.warn('MusicPlayer: 自动播放被浏览器阻止，等待用户交互后重试', err);
+    });
     this.btn.classList.remove('off');
     this.btn.classList.add('on');
     this.isPlaying = true;
@@ -907,13 +925,16 @@ class MusicPlayer {
 // 初始化音乐播放器
 const musicPlayer = new MusicPlayer();
 
-// ===== 弹幕显示模式控制器 =====
+// ===== 弹幕显示模式控制器（简化版）=====
+// 无轨道后，模式只控制容器显示/隐藏，以及自动播放器的启停
 class DanmakuModeController {
   constructor(options = {}) {
     this.container = document.getElementById('danmakuContainer');
     this.btn = document.getElementById('danmakuBtn');
     this.badge = document.getElementById('danmakuBadge');
-    this.mode = options.initialMode || 0; // 0: 全屏, 1: 半屏, 2: 四分之一屏, 3: 关闭
+    this.manager = options.manager || null;
+    this.autoPlayer = options.autoPlayer || null;
+    this.mode = options.initialMode || 0;
     this.modes = [
       { height: '100vh', display: 'block', badge: '', on: true },
       { height: '50vh', display: 'block', badge: '1/2', on: true },
@@ -942,7 +963,37 @@ class DanmakuModeController {
     const mode = this.modes[modeIndex];
     this.container.style.height = mode.height;
     this.container.style.display = mode.display;
-    
+
+    // mask-image 让边界渐变过渡，旧弹幕保持原位置继续飘不会被硬裁切
+    if (mode.on) {
+      // 恢复容器的 mask 渐变（软边界）
+      this.container.style.webkitMaskImage = 'linear-gradient(to bottom, transparent 0%, #000 5%, #000 95%, transparent 100%)';
+      this.container.style.maskImage = 'linear-gradient(to bottom, transparent 0%, #000 5%, #000 95%, transparent 100%)';
+    } else {
+      // 关闭：全透明遮罩，弹幕仍在DOM中继续飘完但不可见
+      this.container.style.webkitMaskImage = 'linear-gradient(to bottom, transparent 0%, transparent 100%)';
+      this.container.style.maskImage = 'linear-gradient(to bottom, transparent 0%, transparent 100%)';
+    }
+
+    if (this.manager) {
+      if (mode.on) {
+        this.manager.showAll();
+        this.manager.resume();
+      } else {
+        this.manager.pause();
+        // 关闭时让所有已有弹幕隐藏但继续在DOM中飘完
+        this.manager.hideAll();
+      }
+    }
+
+    if (this.autoPlayer) {
+      if (mode.on) {
+        this.autoPlayer.start();
+      } else {
+        this.autoPlayer.stop();
+      }
+    }
+
     if (mode.on) {
       this.btn.classList.remove('off');
       this.btn.classList.add('on');
@@ -950,15 +1001,8 @@ class DanmakuModeController {
       this.btn.classList.remove('on');
       this.btn.classList.add('off');
     }
-    
-    this.badge.textContent = mode.badge;
-  }
 
-  setMode(modeIndex) {
-    if (modeIndex >= 0 && modeIndex < this.modes.length) {
-      this.mode = modeIndex;
-      this.applyMode(this.mode);
-    }
+    this.badge.textContent = mode.badge;
   }
 
   destroy() {
@@ -966,12 +1010,13 @@ class DanmakuModeController {
     this.container = null;
     this.btn = null;
     this.badge = null;
+    this.manager = null;
     this._toggleHandler = null;
   }
 }
 
 // 初始化弹幕模式控制器
-const danmakuModeController = new DanmakuModeController();
+const danmakuModeController = new DanmakuModeController({ manager: danmakuManager, autoPlayer: danmakuAutoPlayer });
 
 // ===== 樱花飘落效果 =====
 class SakuraEffect {
@@ -985,6 +1030,7 @@ class SakuraEffect {
     this.maxFontSize = isMobile ? 12 : 28;
     this.flowerTypes = ['❀', '✿', '❁', '✾', '❃', '✿'];
     this.flowerColors = ['#ffb7c5', '#ffc0cb', '#f8b4c4', '#e89bb3', '#d4708a', '#f5a3b5'];
+    this.maxActive = options.maxActive || 30;
     this.intervalId = null;
     this.activeSakuras = new Set();
     this.init();
@@ -995,6 +1041,7 @@ class SakuraEffect {
   }
 
   createSakura() {
+    if (this.activeSakuras.size >= this.maxActive) return;
     const sakura = document.createElement('div');
     sakura.className = 'sakura';
     
@@ -1051,6 +1098,41 @@ const sakuraEffect = new SakuraEffect({
   maxDuration: 14
 });
 
+// ===== 页面可见性管理器（统一处理后台节流）=====
+// 所有 setInterval 的模块在页面不可见时停止，可见时恢复
+class PageVisibilityManager {
+  constructor() {
+    this._controllers = [];
+    this._handleVisibility = this._handleVisibility.bind(this);
+    document.addEventListener('visibilitychange', this._handleVisibility);
+  }
+
+  /** 注册一个拥有 start()/stop() 方法的控制器 */
+  register(controller) {
+    if (controller && typeof controller.start === 'function' && typeof controller.stop === 'function') {
+      this._controllers.push(controller);
+    }
+  }
+
+  _handleVisibility() {
+    if (document.hidden) {
+      this._controllers.forEach(c => c.stop());
+    } else {
+      this._controllers.forEach(c => c.start());
+    }
+  }
+
+  destroy() {
+    document.removeEventListener('visibilitychange', this._handleVisibility);
+    this._controllers = [];
+  }
+}
+
+// 注册需要后台节流的模块
+const pageVisibility = new PageVisibilityManager();
+pageVisibility.register(sakuraEffect);
+pageVisibility.register(danmakuAutoPlayer);
+
 // ===== 滚动提示控制器 =====
 class ScrollHintController {
   constructor(options = {}) {
@@ -1070,8 +1152,16 @@ class ScrollHintController {
   }
 
   setupEventListeners() {
-    this._scrollHandler = () => this.update();
-    window.addEventListener('scroll', this._scrollHandler);
+    this._pendingUpdate = false;
+    this._scrollHandler = () => {
+      if (this._pendingUpdate) return;
+      this._pendingUpdate = true;
+      requestAnimationFrame(() => {
+        this._pendingUpdate = false;
+        this.update();
+      });
+    };
+    window.addEventListener('scroll', this._scrollHandler, { passive: true });
   }
 
   update() {
@@ -1095,251 +1185,6 @@ class ScrollHintController {
 
 // 初始化滚动提示
 const scrollHintController = new ScrollHintController({ threshold: 100 });
-
-// ===== 小说内容加载器（JSON 驱动） =====
-//
-// 直接读取预先对齐过的 novel_data.json：
-//   [{ "id": 1, "jp": "...", "zh": "..." }, ...]
-// 每个 entry 是一对在语义上已经一一对应的中日段落。
-// 不再分别拉两份 txt + 用正则切分 + 推测 pidx/serial——
-// 那套启发式在翻译合并/拆分场景下永远是脆的。
-class NovelLoader {
-  constructor(options = {}) {
-    this.dataUrl = options.dataUrl || './novel_data.json';
-    this.elements = {
-      jpContainer: document.getElementById('novelJapanese'),
-      zhContainer: document.getElementById('novelChinese')
-    };
-    this.onLoadComplete = options.onLoadComplete || null;
-  }
-
-  async load() {
-    try {
-      const response = await fetch(this.dataUrl);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      if (!Array.isArray(data)) throw new Error('novel_data.json 顶层应为数组');
-      this.render(data);
-    } catch (error) {
-      console.error('NovelLoader: 加载/解析 novel_data.json 失败', error);
-      this.elements.jpContainer.innerHTML =
-        '<p class="empty-text">【日本語の小説テキストをここに入力してください】</p>';
-      this.elements.zhContainer.innerHTML =
-        '<p class="empty-text">【请在此输入中文小说文本】</p>';
-    }
-
-    if (typeof this.onLoadComplete === 'function') {
-      setTimeout(this.onLoadComplete, 100);
-    }
-  }
-
-  render(data) {
-    const jpHtml = data.map(entry => this.renderParagraph(entry.id, entry.jp)).join('');
-    const zhHtml = data.map(entry => this.renderParagraph(entry.id, entry.zh)).join('');
-    this.elements.jpContainer.innerHTML = jpHtml;
-    this.elements.zhContainer.innerHTML = zhHtml;
-  }
-
-  // 每个 entry 渲染成一个 <p class="novel-paragraph" data-id="N">
-  // 文本中的 '\n' 用 <br> 渲染——保留多句合并/拆分场景下的阅读节奏，
-  // 同时让 .novel-paragraph 仍是单个 <p>，不破坏既有 .novel-content p 样式。
-  renderParagraph(id, text) {
-    const safeId = String(id);
-    const raw = (text == null) ? '' : String(text);
-    const body = raw
-      .split('\n')
-      .map(line => Utils.escapeHtml(line))
-      .join('<br>');
-    return `<p class="novel-paragraph" data-id="${safeId}">${body}</p>`;
-  }
-}
-
-// ===== 小说同步控制器（按 data-id 1:1 映射） =====
-//
-// 数据已经在构建期（novel_data.json）做过语义对齐，每条 entry 都有唯一的 id，
-// 中日两栏渲染时把 id 写到 .novel-paragraph[data-id]。
-// 所以这里的匹配退化为最简单的形态：两张 id -> element 的 Map，O(1) 直查。
-// 不再有任何启发式（pidx/serial/Block）逻辑。
-class NovelSyncController {
-  constructor() {
-    this.elements = {
-      jpContainer: document.getElementById('novelJapanese'),
-      zhContainer: document.getElementById('novelChinese'),
-      novelWrapper: document.querySelector('.novel-container'),
-      nav: document.querySelector('.nav')
-    };
-    // id(string) -> 段落元素
-    this.jpById = new Map();
-    this.zhById = new Map();
-    // 用于事件委托时去抖，避免在同一段落内移动鼠标反复触发滚动/高亮
-    this._lastHoverP = null;
-  }
-
-  init() {
-    if (!this.elements.jpContainer || !this.elements.zhContainer) {
-      console.warn('NovelSyncController: 缺少必要的DOM元素');
-      return;
-    }
-    this.setupMappings();
-    this.setupEventListeners();
-  }
-
-  setupMappings() {
-    this.jpById.clear();
-    this.zhById.clear();
-    this.elements.jpContainer.querySelectorAll('.novel-paragraph[data-id]').forEach(p => {
-      this.jpById.set(p.dataset.id, p);
-    });
-    this.elements.zhContainer.querySelectorAll('.novel-paragraph[data-id]').forEach(p => {
-      this.zhById.set(p.dataset.id, p);
-    });
-
-    if (this.jpById.size !== this.zhById.size) {
-      console.warn(
-        `NovelSyncController: 中日段落数不一致（JP=${this.jpById.size}, ZH=${this.zhById.size}），` +
-        '请检查 novel_data.json 是否完整。'
-      );
-    }
-  }
-
-  // 绝对 1:1：同 id 在另一侧必然存在（由构建期保证），不存在则返回 null。
-  findCounterpart(sourceP, isJp) {
-    const id = sourceP.dataset.id;
-    if (!id) return null;
-    return (isJp ? this.zhById : this.jpById).get(id) || null;
-  }
-
-  highlightPair(sourceP, isJp) {
-    this.clearHighlights();
-    if (!sourceP || sourceP.classList.contains('empty')) return;
-
-    sourceP.classList.add('highlighted');
-
-    const targetP = this.findCounterpart(sourceP, isJp);
-    if (!targetP || targetP.classList.contains('empty')) return;
-
-    targetP.classList.add('highlighted');
-
-    const targetContainer = isJp ? this.elements.zhContainer : this.elements.jpContainer;
-    this.scrollContainerToParagraph(targetContainer, targetP);
-    this.ensureColumnVisible(targetContainer);
-  }
-
-  // 用 getBoundingClientRect 计算段落相对于容器内部的真实偏移。
-  // 之前用 targetP.offsetTop 的写法存在 bug：offsetTop 是相对于 offsetParent 的，
-  // 而 .novel-content / .novel-column / .novel-container 等祖先都没有 position 定位，
-  // offsetParent 会一路走到 <body>，于是得到的值是该段落距页面顶端几千像素，
-  // 把这个值喂给容器自身的 scrollTo 会被钳到 scrollHeight 末尾，看上去就是"滚到最底/位置乱跳"。
-  scrollContainerToParagraph(container, paragraphEl) {
-    const containerRect = container.getBoundingClientRect();
-    const paragraphRect = paragraphEl.getBoundingClientRect();
-    // 段落顶端 相对 容器内容区顶端 的距离（再叠加容器当前已滚动量，得到目标 scrollTop）
-    const relativeTop = paragraphRect.top - containerRect.top + container.scrollTop;
-    // 让目标段落落在容器视口的上 1/3 处
-    const desired = relativeTop - container.clientHeight / 3;
-    container.scrollTo({ top: Math.max(0, desired), behavior: 'smooth' });
-  }
-
-  // fixed 悬浮导航栏的底边坐标（页面坐标系）。clamp() 让 nav 高度会随视口变化，
-  // 这里实时取，不缓存。
-  getNavBottom() {
-    const nav = this.elements.nav || document.querySelector('.nav');
-    if (!nav) return 0;
-    const rect = nav.getBoundingClientRect();
-    return Math.max(0, rect.bottom);
-  }
-
-  // 目标列若被 nav 遮住，或整列已位于视口下方（手机端两列堆叠时常见），
-  // 用 window.scrollBy 把页面挪一下，让目标列处于 nav 下方的可视区。
-  ensureColumnVisible(container) {
-    const rect = container.getBoundingClientRect();
-    const navBottom = this.getNavBottom();
-    const gap = 12;
-    const vh = window.innerHeight || document.documentElement.clientHeight;
-
-    let pageDelta = 0;
-    if (rect.top < navBottom + gap) {
-      // 顶端被 nav 压住 -> 把页面往下卷，使容器顶端落在 nav 下方
-      pageDelta = rect.top - (navBottom + gap);
-    } else if (rect.top > vh - 80) {
-      // 容器几乎在视口外（在屏幕下方）-> 把页面往上卷
-      pageDelta = rect.top - (navBottom + gap);
-    }
-    if (pageDelta !== 0) {
-      window.scrollBy({ top: pageDelta, behavior: 'smooth' });
-    }
-  }
-
-  clearHighlights() {
-    document.querySelectorAll('.novel-paragraph.highlighted').forEach(p => {
-      p.classList.remove('highlighted');
-    });
-  }
-
-  // 事件委托：监听挂在 .novel-content 容器上，
-  // 不论 e.target 是段落本身、JSON 中 \n 渲染出的 <br>、文本节点，
-  // 还是日后可能加入的 <span class="ruby"> 等子元素，
-  // 都通过 closest('.novel-paragraph') 向上找到带 data-id 的段落容器，再做匹配。
-  setupEventListeners() {
-    const bind = (container, isJp) => {
-      // mouseover 会冒泡（mouseenter 不冒泡，不能配合委托使用）
-      const mouseoverHandler = (e) => {
-        const p = e.target.closest && e.target.closest('.novel-paragraph');
-        if (!p || !container.contains(p) || p.classList.contains('empty')) return;
-        if (this._lastHoverP === p) return;   // 在同一段落里的子节点之间移动时跳过
-        this._lastHoverP = p;
-        this.highlightPair(p, isJp);
-      };
-      
-      const clickHandler = (e) => {
-        const p = e.target.closest && e.target.closest('.novel-paragraph');
-        if (!p || !container.contains(p) || p.classList.contains('empty')) return;
-        this.highlightPair(p, isJp);
-      };
-      
-      const touchstartHandler = (e) => {
-        const p = e.target.closest && e.target.closest('.novel-paragraph');
-        if (!p || !container.contains(p) || p.classList.contains('empty')) return;
-        this.highlightPair(p, isJp);
-      };
-
-      container.addEventListener('mouseover', mouseoverHandler);
-      container.addEventListener('click', clickHandler);
-      container.addEventListener('touchstart', touchstartHandler, { passive: true });
-
-      // 保存处理器引用以便清理
-      if (!this._eventHandlers) this._eventHandlers = [];
-      this._eventHandlers.push({ container, type: 'mouseover', handler: mouseoverHandler });
-      this._eventHandlers.push({ container, type: 'click', handler: clickHandler });
-      this._eventHandlers.push({ container, type: 'touchstart', handler: touchstartHandler });
-    };
-    bind(this.elements.jpContainer, true);
-    bind(this.elements.zhContainer, false);
-
-    // mouseleave 不冒泡，原先挂在 document 上几乎不会触发；改挂在 .novel-container 上。
-    if (this.elements.novelWrapper) {
-      const mouseleaveHandler = () => {
-        this.clearHighlights();
-        this._lastHoverP = null;
-      };
-      this.elements.novelWrapper.addEventListener('mouseleave', mouseleaveHandler);
-      this._eventHandlers.push({ container: this.elements.novelWrapper, type: 'mouseleave', handler: mouseleaveHandler });
-    }
-  }
-
-  destroy() {
-    if (this._eventHandlers) {
-      this._eventHandlers.forEach(({ container, type, handler }) => {
-        container.removeEventListener(type, handler);
-      });
-      this._eventHandlers = null;
-    }
-    this.jpById.clear();
-    this.zhById.clear();
-    this.elements = null;
-    this._lastHoverP = null;
-  }
-}
 
 // ===== 特殊赠礼弹窗控制器 =====
 class GiftModalController {
@@ -1451,13 +1296,7 @@ class GiftModalController {
     } else if (type === 'video') {
       // 与 Page4 VideoModalController 采用相同的 padding-top 容器方案
       this.content.classList.add('video-mode');
-      let embedUrl = url;
-      if (url.includes('bilibili.com/video/')) {
-        const bvid = Utils.extractBvid(url);
-        if (bvid) {
-          embedUrl = `//player.bilibili.com/player.html?bvid=${bvid}&autoplay=1&muted=0`;
-        }
-      }
+      const embedUrl = Utils.buildBilibiliEmbedUrl(url, 1);
 
       const iframe = document.createElement('iframe');
       iframe.src = embedUrl;
@@ -1696,11 +1535,7 @@ class VideoModalController {
   }
 
   buildEmbedSrc(url) {
-    const match = url && url.match(/BV[a-zA-Z0-9]+/);
-    if (match) {
-      return `//player.bilibili.com/player.html?bvid=${match[0]}&autoplay=0&high_quality=1&danmaku=0`;
-    }
-    return url || '';
+    return Utils.buildBilibiliEmbedUrl(url, 0);
   }
 
   destroy() {
@@ -1724,6 +1559,50 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 初始化视频弹窗
   const videoModalController = new VideoModalController();
+
+  // 视频卡片"查看更多"按钮
+  const videoLoadMoreBtn = document.getElementById('videoLoadMoreBtn');
+  if (videoLoadMoreBtn) {
+    let videoExpanded = false;
+    const hiddenCards = document.querySelectorAll('.video-section:first-of-type .video-card.video-more-hidden');
+    videoLoadMoreBtn.addEventListener('click', () => {
+      videoExpanded = !videoExpanded;
+      hiddenCards.forEach(card => {
+        card.classList.toggle('video-more-hidden', !videoExpanded);
+      });
+      videoLoadMoreBtn.textContent = videoExpanded ? '收起 ▴' : '查看更多 ▾';
+      videoLoadMoreBtn.classList.toggle('expanded', videoExpanded);
+    });
+  }
+
+  const novelSynopsis = document.getElementById('novelSynopsis');
+  const novelSynopsisHint = document.getElementById('novelSynopsisHint');
+  if (novelSynopsis && novelSynopsisHint) {
+    let isJp = false;
+    let isAnimating = false;
+
+    novelSynopsisHint.addEventListener('click', () => {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      if (!isJp) {
+        novelSynopsis.classList.add('is-switching');
+        novelSynopsis.classList.remove('is-switching-back');
+      } else {
+        novelSynopsis.classList.add('is-switching-back');
+        novelSynopsis.classList.remove('is-switching');
+      }
+
+      const totalDuration = isJp ? 650 : 650;
+      setTimeout(() => {
+        isJp = !isJp;
+        novelSynopsis.classList.toggle('is-jp', isJp);
+        novelSynopsis.classList.remove('is-switching', 'is-switching-back');
+        novelSynopsisHint.textContent = isJp ? '点击切换中文 ▸' : '日本語で読む ▸';
+        isAnimating = false;
+      }, totalDuration);
+    });
+  }
 
   // Page3 时间线中内联视频链接（如"自我介绍视频"）
   document.querySelectorAll('.timeline-video-link').forEach(link => {
