@@ -17,6 +17,7 @@
   <button class="control-btn off" id="musicBtn">
     <span class="btn-text">音</span>
     <span class="strike-line"></span>
+    <span class="btn-badge" id="musicBadge"></span>
   </button>
   <button class="control-btn on" id="danmakuBtn">
     <span class="btn-text">弹</span>
@@ -25,11 +26,8 @@
   </button>
 </div>
 
-<!-- 背景音乐（默认关闭） -->
-<audio id="bgMusic" loop>
-  <source src="./assets/audio/background_music.mp3" type="audio/mpeg">
-  <source src="./assets/audio/background_music.ogg" type="audio/ogg">
-</audio>
+<!-- 背景音乐播放器（默认关闭） -->
+<audio id="bgMusic" preload="metadata"></audio>
 
 <!-- 视频播放器悬浮窗口 -->
 <div class="video-modal-overlay" id="videoModalOverlay">
@@ -47,19 +45,51 @@
 
 <!-- 导航栏 -->
 <nav class="nav">
-  <span class="nav-item active" data-page="1">プロローグ</span>
-  <span class="nav-separator">·</span>
-  <span class="nav-item" data-page="2">アーカイブ</span>
-  <span class="nav-separator">·</span>
-  <span class="nav-item" data-page="3">軌跡</span>
-  <span class="nav-separator">·</span>
-  <span class="nav-item" data-page="4">コメント</span>
-  <span class="nav-separator">·</span>
-  <span class="nav-item" data-page="5">メッセージ</span>
-  <span class="nav-separator">·</span>
-  <span class="nav-item" data-page="6">デジタルギフト</span>
-  <span class="nav-separator">·</span>
-  <span class="nav-item" data-page="7">謝辞</span>
+  <span class="nav-item active" data-page="1" data-short="序">プロローグ</span>
+  <span class="nav-separator dot">·</span>
+  <span class="nav-item" data-page="2" data-short="档">アーカイブ</span>
+  <span class="nav-separator dot">·</span>
+  <span class="nav-item" data-page="3" data-short="迹">軌跡</span>
+  <span class="nav-separator dot">·</span>
+  <span class="nav-item" data-page="4" data-short="评">コメント</span>
+  <span class="nav-separator dot">·</span>
+  <span class="nav-item" data-page="5" data-short="讯">メッセージ</span>
+  <span class="nav-separator dot">·</span>
+  <span class="nav-item" data-page="6" data-short="礼">デジタルギフト</span>
+  <span class="nav-separator dot">·</span>
+  <span class="nav-item" data-page="7" data-short="谢">謝辞</span>
+</nav>
+
+<!-- 移动端底部导航栏 -->
+<nav class="mobile-nav">
+  <a class="mobile-nav-item active" href="#page1" data-page="1">
+    <span class="mn-icon">♡</span>
+    <span class="mn-label">序章</span>
+  </a>
+  <a class="mobile-nav-item" href="#page2" data-page="2">
+    <span class="mn-icon">✦</span>
+    <span class="mn-label">档案</span>
+  </a>
+  <a class="mobile-nav-item" href="#page3" data-page="3">
+    <span class="mn-icon">✿</span>
+    <span class="mn-label">轨迹</span>
+  </a>
+  <a class="mobile-nav-item" href="#page4" data-page="4">
+    <span class="mn-icon">▶</span>
+    <span class="mn-label">切片</span>
+  </a>
+  <a class="mobile-nav-item" href="#page5" data-page="5">
+    <span class="mn-icon">✉</span>
+    <span class="mn-label">留言</span>
+  </a>
+  <a class="mobile-nav-item" href="#page6" data-page="6">
+    <span class="mn-icon">❀</span>
+    <span class="mn-label">礼物</span>
+  </a>
+  <a class="mobile-nav-item" href="#page7" data-page="7">
+    <span class="mn-icon">❁</span>
+    <span class="mn-label">致谢</span>
+  </a>
 </nav>
 
 <!-- Page1 - 介绍页 -->
@@ -825,13 +855,13 @@
       </p>
       <div class="credits-list">
         <div class="credits-item">
-          <span class="placeholder-text"></span>
+          <span class="placeholder-text">愿咱如星粥如月，夜夜交辉相皎洁！</span>
         </div>
         <div class="credits-item">
-          <span class="placeholder-text">2</span>
+          <span class="placeholder-text">愿猫粥如月之恒，如日之升！</span>
         </div>
         <div class="credits-item">
-          <span class="placeholder-text">3</span>
+          <span class="placeholder-text">希望能和大家一起支持おかゆん成为最受欢迎的Vup喵~</span>
         </div>
       </div>
       <p class="credits-final">
@@ -867,9 +897,9 @@
 <!-- ===== 底栏 ===== -->
 <footer class="footer">
   <div class="footer-inner">
-    <p class="footer-line">制作/设计/开发：羽川響 <!-- （修改代码的时候填上自己的昵称） --></p>
-    <p class="footer-line">贡献者：切片man（羽猫ボール、潇潇落叶知秋、早餐部_Official、疯帽给了Alice等）<!-- 其他贡献者 --></p>
-    <p class="footer-line"><!-- 特别感谢 --></p>
+    <p class="footer-line">制作/设计/开发：羽川響 BronySunset</p>
+    <p class="footer-line">贡献者：曦月、チョウ、空白的音符、切片组（羽猫ボール、潇潇落叶知秋、早餐部_Official、疯帽给了Alice等）</p>
+    <p class="footer-line">特别感谢：各位支持猫羽おかゆ、提供留言和视频支持的粉丝们</p>
     <p class="footer-copy">2026 猫羽おかゆ</p>
   </div>
 </footer>

@@ -1,3 +1,31 @@
+// ===== 通用：触屏长按检测 =====
+// 移动端区分单击（tap）和长按：touchstart 计时，touchend 时超阈值视为长按
+function createTouchHandler(onTap, onLongPress, thresholdMs = 500) {
+  let timer = null;
+  let canceled = false;
+  return {
+    start() {
+      canceled = false;
+      timer = setTimeout(() => {
+        if (!canceled) {
+          canceled = true;
+          onLongPress();
+        }
+        timer = null;
+      }, thresholdMs);
+    },
+    end() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (!canceled) onTap();
+      canceled = false;
+    },
+    cancel() {
+      canceled = true;
+      if (timer) { clearTimeout(timer); timer = null; }
+    }
+  };
+}
+
 // ===== 工具函数 =====
 const Utils = {
   // HTML转义，防止XSS攻击
@@ -250,10 +278,12 @@ const imageSlider = new ImageSlider({
 // ===== 导航控制器 =====
 class NavController {
   constructor(options = {}) {
-    this.threshold = options.threshold || 0.5;
     this.navItems = document.querySelectorAll('.nav-item');
+    this.mobileNavItems = document.querySelectorAll('.mobile-nav-item');
     this.pages = document.querySelectorAll('.page');
     this.observer = null;
+    this._pageRatios = new Map();
+    this._activePage = null;
     this.init();
   }
 
@@ -268,23 +298,31 @@ class NavController {
   }
 
   setupNavClickHandlers() {
+    const clickHandler = (e) => {
+      e.preventDefault();
+      const pageNum = e.currentTarget.dataset.page;
+      this.applyActiveNav(pageNum);
+      const page = document.getElementById('page' + pageNum);
+      if (page) {
+        page.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
     this.navItems.forEach(item => {
-      item.addEventListener('click', (e) => {
-        e.preventDefault();
-        const pageNum = item.dataset.page;
-        this.updateActiveNav(pageNum);
-        const page = document.getElementById('page' + pageNum);
-        if (page) {
-          page.scrollIntoView({ behavior: 'smooth' });
-        }
-      });
+      item.addEventListener('click', clickHandler);
     });
+
+    if (this.mobileNavItems.length) {
+      this.mobileNavItems.forEach(item => {
+        item.addEventListener('click', clickHandler);
+      });
+    }
   }
 
   setupScrollObserver() {
     this.observer = new IntersectionObserver(
       (entries) => this.handleIntersection(entries),
-      { threshold: this.threshold }
+      { threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1] }
     );
 
     this.pages.forEach(page => this.observer.observe(page));
@@ -292,25 +330,39 @@ class NavController {
 
   handleIntersection(entries) {
     entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const pageId = entry.target.id;
-        const pageNum = pageId.replace('page', '');
-        this.updateActiveNav(pageNum);
+      const pageNum = entry.target.id.replace('page', '');
+      this._pageRatios.set(pageNum, entry.intersectionRatio);
+    });
+
+    let bestPage = null;
+    let bestRatio = 0;
+    this._pageRatios.forEach((ratio, pageNum) => {
+      if (ratio > bestRatio) {
+        bestRatio = ratio;
+        bestPage = pageNum;
       }
     });
+
+    if (bestPage !== null && bestPage !== this._activePage) {
+      this._activePage = bestPage;
+      this.applyActiveNav(bestPage);
+    }
   }
 
-  updateActiveNav(pageNum) {
+  applyActiveNav(pageNum) {
+    this._activePage = pageNum;
     this.navItems.forEach(item => {
-      item.classList.remove('active');
-      if (item.dataset.page === pageNum) {
-        item.classList.add('active');
-      }
+      item.classList.toggle('active', item.dataset.page === pageNum);
     });
+    if (this.mobileNavItems.length) {
+      this.mobileNavItems.forEach(item => {
+        item.classList.toggle('active', item.dataset.page === pageNum);
+      });
+    }
   }
 
   setActive(pageNum) {
-    this.updateActiveNav(String(pageNum));
+    this.applyActiveNav(String(pageNum));
     const page = document.getElementById('page' + pageNum);
     if (page) {
       page.scrollIntoView({ behavior: 'smooth' });
@@ -866,8 +918,19 @@ class MusicPlayer {
   constructor(options = {}) {
     this.audio = document.getElementById('bgMusic');
     this.btn = document.getElementById('musicBtn');
+    this.badge = document.getElementById('musicBadge');
     this.isPlaying = false;
+    this.currentIndex = 0;
     this.autoPlay = options.autoPlay !== undefined ? options.autoPlay : false;
+    this._touchFired = false;
+
+    // 播放列表（badge 显示曲目标记）
+    this.playlist = [
+      { src: './assets/audio/bgm_01_main.mp3', badge: '♭' },
+      { src: './assets/audio/bgm_02_spring.mp3', badge: '♮' },
+      { src: './assets/audio/bgm_03_sakura.mp3', badge: '♯' },
+    ];
+
     this.init();
   }
 
@@ -876,30 +939,73 @@ class MusicPlayer {
       console.warn('MusicPlayer: 缺少必要的DOM元素');
       return;
     }
-    this.audio.loop = true;
+    this.loadTrack(this.currentIndex);
     this.setupEventListeners();
-    
+
     if (this.autoPlay) {
       this.play();
     }
   }
 
-  setupEventListeners() {
-    this._toggleHandler = () => this.toggle();
-    this.btn.addEventListener('click', this._toggleHandler);
+  loadTrack(index) {
+    const track = this.playlist[index];
+    if (!track) return;
+    this.audio.src = track.src;
+    this.audio.loop = true;
+    if (this.badge) this.badge.textContent = track.badge;
+    // 如果当前正在播放，切换src后自动续播
+    if (this.isPlaying) {
+      this.audio.play().catch(() => {});
+    }
   }
 
-  toggle() {
-    if (this.isPlaying) {
-      this.pause();
-    } else {
-      this.play();
-    }
+  switchTrack() {
+    this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
+    this.loadTrack(this.currentIndex);
+  }
+
+  setupEventListeners() {
+    // 左键点击：开关
+    this._clickHandler = () => {
+      if (this._touchFired) { this._touchFired = false; return; }  // 触屏已处理，跳过
+      if (this.isPlaying) this.pause();
+      else this.play();
+    };
+
+    // 右键点击：切歌
+    this._contextHandler = (e) => {
+      e.preventDefault();
+      if (this.playlist.length <= 1) return;
+      this.switchTrack();
+    };
+
+    // 触屏：单击=开关，长按=切歌
+    this._touchHandler = createTouchHandler(
+      () => {
+        this._touchFired = true;
+        if (this.isPlaying) this.pause();
+        else this.play();
+      },
+      () => {
+        this._touchFired = true;
+        if (this.playlist.length > 1) this.switchTrack();
+      },
+      450
+    );
+    this._touchStartHandler = () => { this._touchHandler.start(); };
+    this._touchEndHandler = () => { this._touchHandler.end(); };
+    this._touchMoveHandler = () => { this._touchHandler.cancel(); };
+
+    this.btn.addEventListener('click', this._clickHandler);
+    this.btn.addEventListener('contextmenu', this._contextHandler);
+    this.btn.addEventListener('touchstart', this._touchStartHandler, { passive: true });
+    this.btn.addEventListener('touchend', this._touchEndHandler, { passive: true });
+    this.btn.addEventListener('touchmove', this._touchMoveHandler, { passive: true });
   }
 
   play() {
     this.audio.play().catch((err) => {
-      console.warn('MusicPlayer: 自动播放被浏览器阻止，等待用户交互后重试', err);
+      console.warn('MusicPlayer: 自动播放被阻止', err);
     });
     this.btn.classList.remove('off');
     this.btn.classList.add('on');
@@ -914,11 +1020,23 @@ class MusicPlayer {
   }
 
   destroy() {
-    this.btn.removeEventListener('click', this._toggleHandler);
+    this.btn.removeEventListener('click', this._clickHandler);
+    this.btn.removeEventListener('contextmenu', this._contextHandler);
+    this.btn.removeEventListener('touchstart', this._touchStartHandler);
+    this.btn.removeEventListener('touchend', this._touchEndHandler);
+    this.btn.removeEventListener('touchmove', this._touchMoveHandler);
     this.audio.pause();
+    this.audio.src = '';
     this.audio = null;
     this.btn = null;
-    this._toggleHandler = null;
+    this.badge = null;
+    this._clickHandler = null;
+    this._contextHandler = null;
+    this._touchHandler = null;
+    this._touchStartHandler = null;
+    this._touchEndHandler = null;
+    this._touchMoveHandler = null;
+    this._touchFired = false;
   }
 }
 
@@ -934,13 +1052,17 @@ class DanmakuModeController {
     this.badge = document.getElementById('danmakuBadge');
     this.manager = options.manager || null;
     this.autoPlayer = options.autoPlayer || null;
-    this.mode = options.initialMode || 0;
-    this.modes = [
-      { height: '100vh', display: 'block', badge: '', on: true },
-      { height: '50vh', display: 'block', badge: '1/2', on: true },
-      { height: '25vh', display: 'block', badge: '1/4', on: true },
-      { height: 'auto', display: 'none', badge: '', on: false }
+
+    // 弹幕开关状态
+    this._isOn = true;
+    // 屏占比模式索引（仅在开启时有效）
+    this._sizeMode = 0;
+    this._sizeModes = [
+      { height: '100vh', badge: '' },
+      { height: '50vh', badge: '1/2' },
+      { height: '25vh', badge: '1/4' }
     ];
+    this._touchFired = false;
     this.init();
   }
 
@@ -949,69 +1071,112 @@ class DanmakuModeController {
       console.warn('DanmakuModeController: 缺少必要的DOM元素');
       return;
     }
-    this._toggleHandler = () => this.toggle();
-    this.btn.addEventListener('click', this._toggleHandler);
-    this.applyMode(this.mode);
+    // 左键点击：开关
+    this._clickHandler = () => {
+      if (this._touchFired) { this._touchFired = false; return; }
+      this.toggle();
+    };
+
+    // 右键点击：切换屏占比
+    this._contextHandler = (e) => {
+      e.preventDefault();
+      this.cycleSize();
+    };
+
+    // 触屏：单击=开关，长按=切换屏占比
+    this._touchHandler = createTouchHandler(
+      () => {
+        this._touchFired = true;
+        this.toggle();
+      },
+      () => {
+        this._touchFired = true;
+        this.cycleSize();
+      },
+      450
+    );
+    this._touchStartHandler = () => { this._touchHandler.start(); };
+    this._touchEndHandler = () => { this._touchHandler.end(); };
+    this._touchMoveHandler = () => { this._touchHandler.cancel(); };
+
+    this.btn.addEventListener('click', this._clickHandler);
+    this.btn.addEventListener('contextmenu', this._contextHandler);
+    this.btn.addEventListener('touchstart', this._touchStartHandler, { passive: true });
+    this.btn.addEventListener('touchend', this._touchEndHandler, { passive: true });
+    this.btn.addEventListener('touchmove', this._touchMoveHandler, { passive: true });
+
+    this.applyState();
   }
 
+  // 左键：开关弹幕
   toggle() {
-    this.mode = (this.mode + 1) % this.modes.length;
-    this.applyMode(this.mode);
+    this._isOn = !this._isOn;
+    this.applyState();
   }
 
-  applyMode(modeIndex) {
-    const mode = this.modes[modeIndex];
-    this.container.style.height = mode.height;
-    this.container.style.display = mode.display;
+  // 右键：循环切换屏占比（仅开启时有效）
+  cycleSize() {
+    if (!this._isOn) return;
+    this._sizeMode = (this._sizeMode + 1) % this._sizeModes.length;
+    this.applySize();
+  }
 
-    // mask-image 让边界渐变过渡，旧弹幕保持原位置继续飘不会被硬裁切
-    if (mode.on) {
-      // 恢复容器的 mask 渐变（软边界）
+  applyState() {
+    if (this._isOn) {
+      // 开启弹幕
+      this.container.style.display = 'block';
+      this.applySize();
+
       this.container.style.webkitMaskImage = 'linear-gradient(to bottom, transparent 0%, #000 5%, #000 95%, transparent 100%)';
       this.container.style.maskImage = 'linear-gradient(to bottom, transparent 0%, #000 5%, #000 95%, transparent 100%)';
-    } else {
-      // 关闭：全透明遮罩，弹幕仍在DOM中继续飘完但不可见
-      this.container.style.webkitMaskImage = 'linear-gradient(to bottom, transparent 0%, transparent 100%)';
-      this.container.style.maskImage = 'linear-gradient(to bottom, transparent 0%, transparent 100%)';
-    }
 
-    if (this.manager) {
-      if (mode.on) {
+      if (this.manager) {
         this.manager.showAll();
         this.manager.resume();
-      } else {
-        this.manager.pause();
-        // 关闭时让所有已有弹幕隐藏但继续在DOM中飘完
-        this.manager.hideAll();
       }
-    }
+      if (this.autoPlayer) this.autoPlayer.start();
 
-    if (this.autoPlayer) {
-      if (mode.on) {
-        this.autoPlayer.start();
-      } else {
-        this.autoPlayer.stop();
-      }
-    }
-
-    if (mode.on) {
       this.btn.classList.remove('off');
       this.btn.classList.add('on');
     } else {
+      // 关闭弹幕
+      this.container.style.webkitMaskImage = 'linear-gradient(to bottom, transparent 0%, transparent 100%)';
+      this.container.style.maskImage = 'linear-gradient(to bottom, transparent 0%, transparent 100%)';
+
+      if (this.manager) {
+        this.manager.pause();
+        this.manager.hideAll();
+      }
+      if (this.autoPlayer) this.autoPlayer.stop();
+
       this.btn.classList.remove('on');
       this.btn.classList.add('off');
+      this.badge.textContent = '';
     }
+  }
 
-    this.badge.textContent = mode.badge;
+  applySize() {
+    const size = this._sizeModes[this._sizeMode];
+    this.container.style.height = size.height;
+    this.badge.textContent = size.badge;
   }
 
   destroy() {
-    this.btn.removeEventListener('click', this._toggleHandler);
+    this.btn.removeEventListener('click', this._clickHandler);
+    this.btn.removeEventListener('contextmenu', this._contextHandler);
+    this.btn.removeEventListener('touchstart', this._touchStartHandler);
+    this.btn.removeEventListener('touchend', this._touchEndHandler);
+    this.btn.removeEventListener('touchmove', this._touchMoveHandler);
     this.container = null;
     this.btn = null;
     this.badge = null;
     this.manager = null;
-    this._toggleHandler = null;
+    this._clickHandler = null;
+    this._contextHandler = null;
+    this._touchHandler = null;
+    this._touchStartHandler = null;
+    this._touchEndHandler = null;
+    this._touchMoveHandler = null;
   }
 }
 

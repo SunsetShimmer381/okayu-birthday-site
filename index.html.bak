@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>猫羽おかゆ お誕生日</title>
+  <link rel="icon" href="./assets/images/favicon.ico">
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+
+<!-- 弹幕留言板 -->
+<div class="danmaku-container" id="danmakuContainer"></div>
+
+<!-- 控制按钮 -->
+<div class="control-buttons">
+  <button class="control-btn off" id="musicBtn">
+    <span class="btn-text">音</span>
+    <span class="strike-line"></span>
+  </button>
+  <button class="control-btn on" id="danmakuBtn">
+    <span class="btn-text">弹</span>
+    <span class="strike-line"></span>
+    <span class="btn-badge" id="danmakuBadge"></span>
+  </button>
+</div>
+
+<!-- 背景音乐（默认关闭） -->
+<audio id="bgMusic" loop>
+  <source src="./assets/audio/background_music.mp3" type="audio/mpeg">
+  <source src="./assets/audio/background_music.ogg" type="audio/ogg">
+</audio>
+
+<!-- 视频播放器悬浮窗口 -->
+<div class="video-modal-overlay" id="videoModalOverlay">
+  <div class="video-modal">
+    <div class="video-modal-content">
+      <button class="video-modal-close">×</button>
+      <iframe class="video-modal-player" id="videoModalPlayer" allowfullscreen></iframe>
+    </div>
+    <div class="video-modal-info">
+      <h3 class="video-modal-title" id="videoModalTitle">视频标题</h3>
+      <p class="video-modal-desc" id="videoModalDesc">视频描述</p>
+    </div>
+  </div>
+</div>
+
+<!-- 导航栏 -->
+<nav class="nav">
+  <span class="nav-item active" data-page="1">プロローグ</span>
+  <span class="nav-separator">·</span>
+  <span class="nav-item" data-page="2">アーカイブ</span>
+  <span class="nav-separator">·</span>
+  <span class="nav-item" data-page="3">軌跡</span>
+  <span class="nav-separator">·</span>
+  <span class="nav-item" data-page="4">コメント</span>
+  <span class="nav-separator">·</span>
+  <span class="nav-item" data-page="5">メッセージ</span>
+  <span class="nav-separator">·</span>
+  <span class="nav-item" data-page="6">デジタルギフト</span>
+  <span class="nav-separator">·</span>
+  <span class="nav-item" data-page="7">謝辞</span>
+</nav>
+
+<!-- Page1 - 介绍页 -->
+<section class="page" id="page1">
+  <div class="page-inner">
+    <div class="page1-content">
+      <div class="page1-left">
+        <p class="birthday-text">Birthday</p>
+        <div class="name-container">
+          <span class="name-line-1">猫羽</span>
+          <span class="name-line-2"><span class="name-highlight">おかゆ</span></span>
+        </div>
+        <p class="romaji-text">Nekoha Okayu / 猫粥 / 白粥</p>
+        <p class="profile-text">2026年4月末のデビュー以来、今もこれからも、みんな家族ー！</p>
+        <p class="cd-caption" id="cdCaption"></p>
+        <div class="countdown">
+          <div class="cd-cell">
+            <span class="num" id="cdDays">00</span>
+            <span class="lbl">DAYS</span>
+          </div>
+          <div class="cd-cell">
+            <span class="num" id="cdHours">00</span>
+            <span class="lbl">HOURS</span>
+          </div>
+          <div class="cd-cell">
+            <span class="num" id="cdMins">00</span>
+            <span class="lbl">MINS</span>
+          </div>
+          <div class="cd-cell">
+            <span class="num" id="cdSecs">00</span>
+            <span class="lbl">SECS</span>
+          </div>
+        </div>
+      </div>
+      <div class="page1-right">
+        <div class="portrait-card" style="--tilt: -2deg;">
+          <div class="portrait-tape"></div>
+          <div class="portrait-photo-wrap" id="portraitPhotoWrap">
+            <img src="./assets/images/mainPicture1.webp" alt="猫羽おかゆ" class="portrait-photo" id="mainPhoto">
+            <img src="./assets/images/mainPicture1.webp" alt="猫羽おかゆ" class="portrait-photo photo-next" id="photoNext">
+          </div>
+          <div class="portrait-caption">
+            <span>おかゆ</span>
+            <span class="sep">·</span>
+            <span class="years">2026</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <div class="scroll-hint-text">scroll</div>
+      <div class="scroll-hint-arrow"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Page2 - 详情页 -->
+<section class="page" id="page2">
+  <div class="page-inner">
+    <h2 class="page-title">アーカイブ · Profile Archive</h2>
+    
+    <div class="profile-container">
+      <!-- 左侧区域 -->
+      <div class="profile-left-column">
+        <!-- 左侧个人资料卡片 -->
+        <div class="profile-card">
+        <div class="profile-card-header">
+          <h3>基本情報 · Basic Info</h3>
+        </div>
+        <div class="profile-info">
+          <div class="info-row">
+            <span class="info-label">名前</span>
+            <span class="info-value"><span class="placeholder-text">猫羽おかゆ</span></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">誕生日</span>
+            <span class="info-value">6月8日</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">年齢</span>
+            <span class="info-value"><span class="placeholder-text">3岁（设定）</span></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">发色 / 瞳色</span>
+            <span class="info-value"><span class="placeholder-text">白/粉发 · 红瞳</span></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">种族</span>
+            <span class="info-value"><span class="placeholder-text">兽人种 · 白猫</span></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">デビュー日</span>
+            <span class="info-value"><span class="placeholder-text">2026年4月18日</span></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">ファンネーム</span>
+            <span class="info-value"><span class="placeholder-text">猫粥宝</span></span>
+          </div>
+        </div>
+        </div>
+
+        <!-- 人物設定卡片 -->
+        <div class="feature-card">
+          <div class="feature-card-header">
+            <h3>人物設定 · Character Settings</h3>
+          </div>
+          <div class="feature-card-content">
+            <p><span class="placeholder-text">一只三岁的爱唱歌的软软猫猫哦~</span></p>
+            <div class="feature-tags">
+              <span class="tag">#猫羽おかゆ</span>
+              <span class="tag">#ねこねこ家族</span>
+              <span class="tag">#猫粥宝</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧区域 -->
+      <div class="profile-right-section">
+        <!-- 顶部两栏 -->
+        <div class="top-cards-row">
+          <!-- 爱称卡片 -->
+          <div class="mini-card">
+            <div class="mini-card-header">
+              <h4>愛称 · Nicknames</h4>
+            </div>
+            <div class="mini-card-content">
+              <div class="nickname-tags">
+                <span class="nickname-tag">ねこちゃん</span>
+                <span class="nickname-tag">おかゆちゃん</span>
+                <span class="nickname-tag">おかゆん</span>
+                <span class="nickname-tag">白粥</span>
+                <span class="nickname-tag">事故势猫猫</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 飲食喜好卡片 -->
+          <div class="mini-card">
+            <div class="mini-card-header">
+              <h4>飲食喜好 · Food</h4>
+            </div>
+            <div class="mini-card-content">
+              <div class="food-grid">
+                <div class="food-item">
+                  <span class="food-label">好き</span>
+                  <p><span class="placeholder-text">麻辣豆腐（辛い、好き）、培根、咸粥、章鱼烧、蛋包饭、布丁、冰淇淋</span></p>
+                </div>
+                <div class="food-item">
+                  <span class="food-label">嫌い</span>
+                  <p><span class="placeholder-text">青椒、胡萝卜、番茄（但是不排斥番茄酱？）、大多数甜食（因为很快就会腻啦）</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 日常用語卡片 -->
+        <div class="feature-card">
+          <div class="feature-card-header">
+            <h3>日常用語 · Catchphrases</h3>
+          </div>
+          <div class="feature-card-content">
+            <div class="phrase-grid">
+              <div class="phrase-item">
+                <div class="phrase-main">
+                  <span class="phrase-jp"><span class="placeholder-text">ぐーぐーがーがー</span></span>
+                  <span class="phrase-sep">·</span>
+                  <span class="phrase-cn"><span class="placeholder-text">咕咕嘎嘎</span></span>
+                </div>
+                <span class="phrase-usage"><span class="placeholder-text">各种语气的咕咕嘎嘎，有时当逗号使用，好像会让自己变得更可爱</span></span>
+              </div>
+              <div class="phrase-item">
+                <div class="phrase-main">
+                  <span class="phrase-jp"><span class="placeholder-text">わん しあん ほ</span></span>
+                  <span class="phrase-sep">·</span>
+                  <span class="phrase-cn"><span class="placeholder-text">晚上好</span></span>
+                </div>
+                <span class="phrase-usage"><span class="placeholder-text">“晚上好~”，这是开播以来说的最标准的中文——字正腔圆</span></span>
+              </div>
+              <div class="phrase-item">
+                <div class="phrase-main">
+                  <span class="phrase-jp"><span class="placeholder-text">ブロニーさん、大好き！</span></span>
+                  <span class="phrase-sep">·</span>
+                  <span class="phrase-cn"><span class="placeholder-text">最喜欢brony桑啦！</span></span>
+                </div>
+                <span class="phrase-usage"><span class="placeholder-text">作为猫羽おかゆ的第一个提督sama，当然是最喜欢啦！</span></span>
+              </div>
+              <div class="phrase-item">
+                <div class="phrase-main">
+                  <span class="phrase-jp"><span class="placeholder-text">ははははは~</span></span>
+                  <span class="phrase-sep">·</span>
+                  <span class="phrase-cn"><span class="placeholder-text">哈哈哈哈哈~</span></span>
+                </div>
+                <span class="phrase-usage"><span class="placeholder-text">这健康的笑声总是响彻直播间~</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Page3 - 时间线 -->
+<section class="page" id="page3">
+  <div class="page-inner">
+    <h2 class="page-title">軌跡 · Timeline</h2>
+    <div class="timeline-wrapper">
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_1.webp" alt="初次相遇" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
+          <p class="timeline-date">2026.4.18</p>
+          <p class="timeline-title">初次相遇</p>
+          <p class="timeline-desc">猫羽おかゆ在B站发布<span class="timeline-video-link" data-url="https://www.bilibili.com/video/BV1hUdJB2Eqb" data-title="自我介绍视频">自我介绍视频</span>，仅仅一天就播放量和粉丝均破万！</p>
+        </div>
+        <div class="timeline-item highlight">
+          <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_2.webp" alt="初配信" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
+          <p class="timeline-date">2026.4.24</p>
+          <p class="timeline-title">初配信</p>
+          <p class="timeline-desc">虽然第一次直播事故连连（实则后边也是，不愧是事故势（笑），但是大家热情仿佛很高，直播间人气一度登顶第一</p>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_3.webp" alt="3w 粉达成" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
+          <p class="timeline-date">2026.5.3</p>
+          <p class="timeline-title">3w粉达成</p>
+          <p class="timeline-desc">在下午5:21的时刻，猫羽おかゆ迎来了自己的第3w个粉丝，5:21（?也许是爱意的体现！</p>
+        </div>
+        <div class="timeline-item highlight">
+          <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_4.webp" alt="百舰了！" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
+          <p class="timeline-date">2026.5.6</p>
+          <p class="timeline-title">百舰了！</p>
+          <p class="timeline-desc">在晚上9:57的时刻，猫羽おかゆ在仅直播不到十次，就以自己独当一面的直播风格迎来了自己的第100个舰长！</p>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_5.webp" alt="超长耐久回" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
+          <p class="timeline-date">2026.5.21</p>
+          <p class="timeline-title">超长耐久回</p>
+          <p class="timeline-desc">兴奋的猫猫在这天整整直播了八个小时！</p>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-tooltip">
+            <div class="tooltip-arrow"></div>
+            <img class="tooltip-image" src="./assets/images/timeline_6.webp" alt="和三角酱联动" />
+            <span class="tooltip-caption">点击放大</span>
+          </div>
+          <p class="timeline-date">2026.5.23</p>
+          <p class="timeline-title">和すみれちゃん联动</p>
+          <p class="timeline-desc">在这场直播问答中，又更了解猫猫了呢!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Page4 - 精选切片 -->
+<section class="page" id="page4">
+  <div class="page-inner">
+    <h2 class="page-title">精選切片 · Selected Clips</h2>
+    
+    <!-- 第一部分：猫的动静 -->
+    <div class="video-section">
+      <div class="section-header">
+        <div class="section-dot"></div>
+        <h3 class="section-title">猫的动静 · Cute Moments</h3>
+        <p class="section-desc">捕捉那些可爱有趣的瞬间</p>
+      </div>
+      <div class="video-grid">
+        <div class="video-card" data-title="あ↓いーうーえーおー" data-url="https://www.bilibili.com/video/BV1hRRSBcEgd" data-desc="字幕くん、また死んだの？">
+          <div class="video-thumbnail">
+            <img src="./assets/images/video_1.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">00:05</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">あ↓いーうーえーおー</h3>
+            <p class="video-desc">字幕くん、また死んだの？</p>
+          </div>
+        </div>
+        <div class="video-card" data-title="ぐーぐーがーがー" data-url="https://www.bilibili.com/video/BV1Kg5J6uER7" data-desc="ASMRですね~">
+          <div class="video-thumbnail">
+            <img src="./assets/images/video_2.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">00:15</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">ぐーぐーがーがー</h3>
+            <p class="video-desc">ASMRですね~</p>
+          </div>
+        </div>
+        <div class="video-card" data-title="雑魚、ばか~" data-url="https://www.bilibili.com/video/BV1ciG462EQd" data-desc="罵られてドM発動！">
+          <div class="video-thumbnail">
+            <img src="./assets/images/video_3.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">00:16</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">雑魚、ばか~</h3>
+            <p class="video-desc">罵られてドM発動！</p>
+          </div>
+        </div>
+        <div class="video-card video-more-hidden" data-title="日本萝莉猫猫对观众又亲又舔🥰" data-url="https://www.bilibili.com/video/BV1uVGR6KEPG" data-desc="ちゅ～ちゅ～">
+          <div class="video-thumbnail">
+            <img src="./assets/images/video_4.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">01:34</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">日本萝莉猫猫对观众又亲又舔🥰</h3>
+            <p class="video-desc">ちゅ～ちゅ～</p>
+          </div>
+        </div>
+        <div class="video-card video-more-hidden" data-title="吹泡泡一分钟～" data-url="https://www.bilibili.com/video/BV1zUL46EEoK" data-desc="ふわふわ泡泡～">
+          <div class="video-thumbnail">
+            <img src="./assets/images/video_5.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">01:09</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">『猫羽おかゆ』吹泡泡一分钟～</h3>
+            <p class="video-desc">ふわふわ泡泡～</p>
+          </div>
+        </div>
+        <div class="video-card video-more-hidden" data-title="Kiss kiss mua～" data-url="https://www.bilibili.com/video/BV1LZL46VE2i" data-desc="Kiss kiss～mua!">
+          <div class="video-thumbnail">
+            <img src="./assets/images/video_6.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">01:14</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">『猫羽おかゆ』Kiss kiss mua～</h3>
+            <p class="video-desc">Kiss kiss～mua!</p>
+          </div>
+        </div>
+      </div>
+      <button class="video-load-more" id="videoLoadMoreBtn">查看更多 ▾</button>
+    </div>
+    
+    <!-- 第二部分：猫的歌声 -->
+    <div class="video-section">
+      <div class="section-header">
+        <div class="section-dot"></div>
+        <h3 class="section-title">猫的歌声 · Singing</h3>
+        <p class="section-desc">聆听治愈人心的歌声</p>
+      </div>
+      <div class="video-grid">
+        <div class="video-card" data-title="恋愛サーキュレーション" data-url="https://www.bilibili.com/video/BV119LA6ZEW9" data-desc="心は進化するよ もっともっと">
+          <div class="video-thumbnail">
+            <img src="./assets/images/song_1.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">04:37</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">恋愛サーキュレーション</h3>
+            <p class="video-desc">心は進化するよ もっともっと</p>
+          </div>
+        </div>
+        <div class="video-card" data-title="ふわふわ时间" data-url="https://www.bilibili.com/video/BV1soLU6pE1n" data-desc="キミを见てるといつもハートDOKI☆DOKI">
+          <div class="video-thumbnail">
+            <img src="./assets/images/song_2.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">04:06</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">ふわふわ时间</h3>
+            <p class="video-desc">キミを见てるといつもハートDOKI☆DOKI</p>
+          </div>
+        </div>
+        <div class="video-card" data-title="白金ディスコ" data-url="https://www.bilibili.com/video/BV111RtBoEf4" data-desc="初めて知った この永远を君に誓うよ">
+          <div class="video-thumbnail">
+            <img src="./assets/images/song_3.webp" alt="视频封面" class="video-cover">
+            <div class="video-duration">04:44</div>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title">白金ディスコ</h3>
+            <p class="video-desc">初めて知った この永远を君に誓うよ</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Page5 - 粉丝留言页 -->
+<section class="page" id="page5">
+  <div class="page-inner">
+    <h2 class="page-title">ファンメッセージ · Fan Messages</h2>
+    
+    <div class="messages-wrapper">
+      <!-- 顶部统计和排序区域 -->
+      <div class="messages-top-bar">
+        <div class="messages-stats" id="messagesStats">共 0 条留言 · 第 1 / 1 页</div>
+      </div>
+      
+      <!-- 留言卡片区域 -->
+      <div class="messages-container" id="messagesContainer">
+        <!-- 留言卡片将由 JavaScript 动态生成 -->
+      </div>
+      
+      <!-- 底部分页区域 -->
+      <div class="pagination" id="pagination">
+        <button class="pagination-btn pagination-prev" id="paginationPrev" disabled>‹</button>
+        <div class="pagination-numbers" id="paginationNumbers"></div>
+        <button class="pagination-btn pagination-next" id="paginationNext">›</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Page6 - 特殊贈り物 · Special Gifts -->
+<section class="page" id="page6">
+  <div class="page-inner">
+    
+    <!-- 标题 -->
+    <h2 class="page-title">ファン×デジタルギフト · Fan x Digital Gift</h2>
+    <p class="page-title-note">— 献给猫羽おかゆ —</p>
+
+    <!-- 瀑布流卡片展示区 (6个独立卡片，3列) -->
+    <div class="gift-showcase">
+
+      <!-- 列1-上：3:4 图片 -->
+      <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_bianhua.webp" data-title="彼岸花の手描きイラスト">
+        <div class="gift-tape"></div>
+        <div class="gift-card-image image-type">
+          <img src="./assets/images/gift_bianhua.webp" alt="彼岸花の手描きイラスト">
+          <div class="glass-overlay">
+            <div class="glass-content">
+              <p class="gift-card-label">ILLUSTRATION</p>
+              <h3 class="gift-card-title">彼岸花の手描きイラスト</h3>
+              <p class="gift-card-desc">Happy Birthday!</p>
+              <p class="gift-card-date">2026.05.25</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列2-上：3:4 图片 -->
+      <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_chou.webp" data-title="チョウの手描きイラスト">
+        <div class="gift-tape gift-tape--center"></div>
+        <div class="gift-card-image image-type">
+          <img src="./assets/images/gift_chou.webp" alt="チョウの手描きイラスト">
+          <div class="glass-overlay">
+            <div class="glass-content">
+              <p class="gift-card-label">ILLUSTRATION</p>
+              <h3 class="gift-card-title">チョウの手描きイラスト</h3>
+              <p class="gift-card-desc">Happy Birthday!</p>
+              <p class="gift-card-date">2026.05.21</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列3-上：3:4 图片 -->
+      <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_DPic.webp" data-title="D_pictureの手描きイラスト">
+        <div class="gift-tape gift-tape--right"></div>
+        <div class="gift-card-image image-type">
+          <img src="./assets/images/gift_DPic.webp" alt="D_pictureの手描きイラスト">
+          <div class="glass-overlay">
+            <div class="glass-content">
+              <p class="gift-card-label">ILLUSTRATION</p>
+              <h3 class="gift-card-title">D_pictureの手描きイラスト</h3>
+              <p class="gift-card-desc">Happy Birthday!</p>
+              <p class="gift-card-date">2026.05.27</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列1-下：4:3 视频 -->
+      <div class="gift-card gift-card-video-glass" data-type="video" data-url="https://www.bilibili.com/video/BV1cQLJ6PEg1" data-title="【猫羽おかゆ】自制MV《快乐星猫》">
+        <div class="gift-tape"></div>
+        <div class="gift-card-image image-horizontal">
+          <img src="./assets/images/gift_video1.webp" alt="【猫羽】自制MV《快乐星猫》">
+          <div class="video-play-overlay">
+            <div class="play-circle">PLAY</div>
+          </div>
+          <div class="glass-overlay">
+            <div class="glass-content">
+              <p class="gift-card-label">VIDEO</p>
+              <h3 class="gift-card-title">【猫羽おかゆ】自制MV《快乐星猫》</h3>
+              <p class="gift-card-desc">かくさん潇潇落叶</p>
+              <p class="gift-card-date">Bilibili</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列2-下：4:3 图片 -->
+      <div class="gift-card gift-card-img-glass" data-type="image" data-url="./assets/images/gift_tutu.webp" data-title="更新失敗の書道">
+        <div class="gift-tape gift-tape--center"></div>
+        <div class="gift-card-image image-horizontal">
+          <img src="./assets/images/gift_tutu.webp" alt="更新失敗の書道">
+          <div class="glass-overlay">
+            <div class="glass-content">
+              <p class="gift-card-label">ILLUSTRATION</p>
+              <h3 class="gift-card-title">更新失敗の書道</h3>
+              <p class="gift-card-desc">Happy Birthday!</p>
+              <p class="gift-card-date">2026.05.26</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列3-下：4:3 视频 -->
+      <div class="gift-card gift-card-video-glass" data-type="video" data-url="" data-title="【预留】">
+        <div class="gift-tape gift-tape--right"></div>
+        <div class="gift-card-image image-horizontal">
+          <div class="video-play-overlay">
+            <div class="play-circle">PLAY</div>
+          </div>
+          <div class="glass-overlay">
+            <div class="glass-content">
+              <p class="gift-card-label">VIDEO</p>
+              <h3 class="gift-card-title">【预留】</h3>
+              <p class="gift-card-desc"></p>
+              <p class="gift-card-date">Bilibili</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 引导线 -->
+    <div class="book-divider">
+      <div class="book-divider-title">音律异界物语</div>
+      <div class="book-divider-sub">短編小説 · 著者：曦月</div>
+    </div>
+
+    <!-- 小说章节导航 -->
+    <div class="novel-section">
+
+      <div class="novel-header">
+        <p class="novel-header-subtitle">全七章 · 点击章节在线浏览或下载小说文件</p>
+      </div>
+
+      <div class="novel-synopsis" id="novelSynopsis">
+        <div class="novel-synopsis-inner">
+          <div class="novel-synopsis-cn">
+            <p class="novel-synopsis-lead">—— 故事梗概 ——</p>
+            <p>
+              雨夜，猫耳少女<b>猫羽粥</b>在公寓里弹着吉他，被一道神秘白光卷入异世界——一个以音乐为力量源泉的<b>音乐之国</b>。
+              在这里，旋律可以化作利刃，音符能够凝聚为护盾。
+              她在骑士团长<b>布朗尼</b>与鼓手<b>llingking</b>的帮助下，拜入精灵导师<b>普莉姆拉</b>门下，
+              仅用七日便掌握了音律化武之力。
+            </p>
+            <p>
+              为寻找音乐之神遗留的圣物<b>「彼岸花」</b>，猫羽粥与骑士<b>芙宁蝶</b>、侦察队长<b>梅林</b>、伙伴<b>时雨</b>一同航向冰火双岛。
+              在极寒与灼热交织的险境中，她们遭遇了巫师团<b>「七宗罪」</b>之一的嫉妒之罪·空白。
+              生死之战中，曾是敌人的少年<b>拾玥</b>选择了反抗黑暗，以自身重伤换来同伴的生机。
+            </p>
+            <p>
+              彼岸花灵化作两根琴弦融入猫羽粥的吉他——冰蓝与赤红，象征双岛之力。
+              众人齐聚王城，在国王<b>羽川</b>的见证下，拾玥揭开了巫师团首领深不可测的真相。
+              远征的号角已然吹响，对抗七宗罪、拯救世界的序曲，才刚刚奏响。
+            </p>
+          </div>
+          <div class="novel-synopsis-jp">
+            <p class="novel-synopsis-lead">—— あらすじ ——</p>
+            <p>
+              雨の夜、猫耳の少女<b>猫羽おかゆ</b>がアパートでギターを弾いていると、謎の白い光に包まれ異世界へ——そこは音楽が力の源となる<b>「音楽の国」</b>だった。
+              旋律は刃となり、音符は盾となる。
+              騎士団長<b>ブラウニー</b>と太鼓の達人<b>llingking</b>の助けを得て、エルフの師<b>プリー厶ラ</b>の門下に入り、
+              わずか七日で音律化武の力を身につけた。
+            </p>
+            <p>
+              音楽の神が遺した聖物<b>「彼岸花」</b>を求めて、猫羽粥は騎士<b>フーニンディエ</b>、偵察隊長<b>メイリン</b>、仲間<b>シグレ</b>と共に氷と炎の双島へ航海する。
+              極寒と灼熱が交錯する危険な地で、彼女たちは魔術師団<b>「七つの大罪」</b>の一員、嫉妬の罪・<b>クウハク</b>と遭遇。
+              生死を賭けた戦いの中、かつて敵だった少年<b>シーユエ</b>は闇に抗うことを選び、自らの重傷と引き換えに仲間を救った。
+            </p>
+            <p>
+              彼岸花の精霊は二本の弦となり猫羽粥のギターに宿る——氷青と紅蓮、双島の力を象徴して。
+              王城に集結した仲間たち、国王<b>ウカワ</b>の見守る中、シーユエは魔術師団の首領の計り知れない真実を明かした。
+              遠征の角笛はすでに鳴り響き、七つの大罪に立ち向かい世界を救う序曲が、今まさに奏でられ始めたのだ。
+            </p>
+          </div>
+        </div>
+        <div class="novel-synopsis-hint" id="novelSynopsisHint">日本語で読む ▸</div>
+      </div>
+
+      <div class="novel-lang-row">
+
+        <!-- 日语（七章） -->
+        <div class="novel-lang-col">
+          <div class="novel-lang-label">日本語 <span>Japanese</span></div>
+          <div class="chapter-list">
+            <div class="chapter-item">
+              <span class="chapter-number">#01</span>
+              <span class="chapter-title">雨夜の弦音、異世界からの来訪者</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/jp/01_第01章_雨夜の弦音、異世界からの来訪者.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/jp/01_第01章_雨夜の弦音、異世界からの来訪者.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#02</span>
+              <span class="chapter-title">古の巻物と運命</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/jp/02_第02章_古の巻物と運命.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/jp/02_第02章_古の巻物と運命.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#03</span>
+              <span class="chapter-title">選ばれし少女</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/jp/03_第03章_選ばれし少女.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/jp/03_第03章_選ばれし少女.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#04</span>
+              <span class="chapter-title">氷と炎の彼岸</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/jp/04_第04章_氷と炎の彼岸.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/jp/04_第04章_氷と炎の彼岸.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#05</span>
+              <span class="chapter-title">嫉妬の罪と覚醒</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/jp/05_第05章_嫉妬の罪と覚醒.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/jp/05_第05章_嫉妬の罪と覚醒.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#06</span>
+              <span class="chapter-title">向日葵の約束</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/jp/06_第06章_向日葵の約束.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/jp/06_第06章_向日葵の約束.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#07</span>
+              <span class="chapter-title">遠征序曲</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/jp/07_第07章_遠征序曲.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/jp/07_第07章_遠征序曲.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 中文（七章） -->
+        <div class="novel-lang-col">
+          <div class="novel-lang-label">中文 <span>Chinese</span></div>
+          <div class="chapter-list">
+            <div class="chapter-item">
+              <span class="chapter-number">#01</span>
+              <span class="chapter-title">雨夜弦音，异世来客</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/cn/01_第01章_雨夜弦音，异世来客.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/cn/01_第01章_雨夜弦音，异世来客.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#02</span>
+              <span class="chapter-title">古卷与命运</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/cn/02_第02章_古卷与命运.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/cn/02_第02章_古卷与命运.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#03</span>
+              <span class="chapter-title">被选中的少女</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/cn/03_第03章_被选中的少女.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/cn/03_第03章_被选中的少女.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#04</span>
+              <span class="chapter-title">冰与火的彼岸</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/cn/04_第04章_冰与火的彼岸.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/cn/04_第04章_冰与火的彼岸.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#05</span>
+              <span class="chapter-title">妒罪与觉醒</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/cn/05_第05章_妒罪与觉醒.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/cn/05_第05章_妒罪与觉醒.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#06</span>
+              <span class="chapter-title">向日葵的约定</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/cn/06_第06章_向日葵的约定.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/cn/06_第06章_向日葵的约定.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+            <div class="chapter-item">
+              <span class="chapter-number">#07</span>
+              <span class="chapter-title">远征序曲</span>
+              <div class="chapter-actions">
+                <a href="./assets/novel/cn/07_第07章_远征序曲.txt" class="chapter-btn" target="_blank">浏览</a>
+                <a href="./assets/novel/cn/07_第07章_远征序曲.txt" class="chapter-btn chapter-btn-download" download target="_blank">下载</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 整本下载区 -->
+      <div class="novel-download-area">
+        <p class="novel-download-hint">下载完整小说</p>
+        <a href="./assets/novel/jp/full.txt" class="novel-download-link" download>日本語 全文 .txt</a>
+        <a href="./assets/novel/cn/full.txt" class="novel-download-link" download>中文全文 .txt</a>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- 礼物弹窗 -->
+<div class="gift-modal-overlay" id="giftModalOverlay">
+  <div class="gift-modal">
+    <button class="gift-modal-close" id="giftModalClose">×</button>
+    <div class="gift-modal-content" id="giftModalContent">
+      <!-- 内容将由 JavaScript 动态填充 -->
+    </div>
+    <div class="gift-modal-caption">
+      <h4 class="gift-modal-title" id="giftModalTitle">标题</h4>
+      <p class="gift-modal-desc" id="giftModalDesc">描述</p>
+    </div>
+  </div>
+</div>
+
+<!-- Page7 - 鸣谢 -->
+<section class="page" id="page7">
+  <div class="page-inner page7-inner">
+    <h2 class="page-title">致谢 · Acknowledgments</h2>
+    <div class="credits-wrapper">
+      <p class="credits-text">
+        <span class="placeholder-text">感谢每一位陪伴猫羽おかゆ的你</span><br>
+        <span class="placeholder-text">是你们的支持让她走到了这里</span>
+      </p>
+      <div class="credits-list">
+        <div class="credits-item">
+          <span class="placeholder-text"></span>
+        </div>
+        <div class="credits-item">
+          <span class="placeholder-text">2</span>
+        </div>
+        <div class="credits-item">
+          <span class="placeholder-text">3</span>
+        </div>
+      </div>
+      <p class="credits-final">
+        <span class="placeholder-text">おかゆ、生日快乐！</span>
+      </p>
+      <div class="follow-section">
+        <p class="follow-text">关注猫羽おかゆ谢谢喵</p>
+        <div class="social-links">
+          <a href="https://space.bilibili.com/3706969395300793" target="_blank" rel="noopener noreferrer" class="social-link social-link-bilibili">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.56 3.76v7.36c-.036 1.51-.556 2.769-1.56 3.773s-2.262 1.524-3.773 1.56H5.333c-1.51-.036-2.769-.556-3.773-1.56S.036 18.858 0 17.347v-7.36c.036-1.511.556-2.765 1.56-3.76 1.004-.996 2.262-1.52 3.773-1.574h.774l-1.174-1.12a1.234 1.234 0 0 1-.373-.906c0-.347.124-.64.373-.88.248-.24.552-.36.914-.36h2.986c.347 0 .64.107.879.32.24.214.392.48.456.8l1.107 8.666c.07.318.035.576-.106.773-.14.198-.35.296-.627.296h-1.44a1.22 1.22 0 0 1-.426-.08 2.842 2.842 0 0 1-.373-.24l-6.413-6.413v5.306L7.56 17.12l.48.48a2.34 2.34 0 0 1 .533.666 2.07 2.07 0 0 1-.746 2.774 2.742 2.742 0 0 1-1.146.4 2.62 2.62 0 0 1-1.106-.106 3.14 3.14 0 0 1-.96-.426 2.894 2.894 0 0 1-.693-.693 2.719 2.719 0 0 1-.426-.96 2.527 2.527 0 0 1-.107-1.106c.036-.374.16-.72.374-1.04.213-.32.48-.587.8-.8l4.826-4.826V6.573a2.527 2.527 0 0 1-.106-1.106c.035-.383.16-.72.373-1.013.214-.292.48-.534.8-.726.32-.191.666-.32 1.04-.386.374-.065.733-.08 1.08-.04l-.906 1.013z"/></svg>
+            <span>B站主页</span>
+          </a>
+          <a href="https://twitter.com/Nekoha_Okayu" target="_blank" rel="noopener noreferrer" class="social-link social-link-twitter">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <span>@Nekoha_Okayu</span>
+          </a>
+          <a href="https://www.youtube.com/@Nekoha_Okayu" target="_blank" rel="noopener noreferrer" class="social-link social-link-youtube">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            <span>YouTube</span>
+          </a>
+        </div>
+        <div class="credit-badge">
+          <p>
+            <span class="placeholder-text">bilibili介绍朋友</span> →
+            <a href="https://space.bilibili.com/1749759796" target="_blank" rel="noopener noreferrer">直达链接</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 底栏 ===== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <p class="footer-line">制作/设计/开发：羽川響 <!-- （修改代码的时候填上自己的昵称） --></p>
+    <p class="footer-line">贡献者：切片man（羽猫ボール、潇潇落叶知秋、早餐部_Official、疯帽给了Alice等）<!-- 其他贡献者 --></p>
+    <p class="footer-line"><!-- 特别感谢 --></p>
+    <p class="footer-copy">2026 猫羽おかゆ</p>
+  </div>
+</footer>
+
+  <script src="./assets/js/danmaku-data.js"></script>
+  <script src="./assets/js/main.js"></script>
+
+</body>
+</html>
