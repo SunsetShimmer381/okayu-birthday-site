@@ -936,9 +936,10 @@ class MusicPlayer {
 
     // 播放列表（badge 显示曲目标记）
     this.playlist = [
-      { src: './assets/audio/bgm_01_main.mp3', badge: '♭' },
-      { src: './assets/audio/bgm_02_spring.mp3', badge: '♮' },
-      { src: './assets/audio/bgm_03_sakura.mp3', badge: '♯' },
+      { src: './assets/audio/bgm_01.mp3', badge: '♭' },
+      { src: './assets/audio/bgm_03.mp3', badge: '♮' },
+      { src: './assets/audio/bgm_04.mp3', badge: '♯' },
+      { src: './assets/audio/bgm_02.mp3', badge: '♪' },
     ];
 
     this.init();
@@ -1705,6 +1706,7 @@ class VideoModalController {
     }
     this.overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
+    musicPlayer.audio.muted = true;
   }
 
   close() {
@@ -1712,6 +1714,7 @@ class VideoModalController {
     // 关键：清空 iframe.src 停止后台播放与发声
     this.iframe.src = '';
     document.body.style.overflow = '';
+    musicPlayer.audio.muted = false;
   }
 
   buildEmbedSrc(url) {
@@ -1755,10 +1758,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // 礼物卡片"查看更多"按钮（仅移动端生效）
+  const giftLoadMoreBtn = document.getElementById('giftLoadMoreBtn');
+  if (giftLoadMoreBtn) {
+    let giftExpanded = false;
+    const hiddenGifts = document.querySelectorAll('.gift-card.gift-more-hidden');
+    giftLoadMoreBtn.addEventListener('click', () => {
+      giftExpanded = !giftExpanded;
+      hiddenGifts.forEach(card => {
+        card.classList.toggle('gift-more-hidden', !giftExpanded);
+      });
+      giftLoadMoreBtn.textContent = giftExpanded ? '收起 ▴' : '查看更多 ▾';
+    });
+  }
+
   const novelSynopsis = document.getElementById('novelSynopsis');
   const novelSynopsisHint = document.getElementById('novelSynopsisHint');
   if (novelSynopsis && novelSynopsisHint) {
-    let isJp = false;
+    let isJp = true;
     let isAnimating = false;
     const novelSynopsisInner = novelSynopsis.querySelector('.novel-synopsis-inner');
     const novelSynopsisCN = novelSynopsis.querySelector('.novel-synopsis-cn');
@@ -1810,7 +1827,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const fanletterCN = document.getElementById('fanletterCN');
   const fanletterJP = document.getElementById('fanletterJP');
   if (fanletterText && fanletterSwitch) {
-    let isFanletterJp = false;
+    let isFanletterJp = true;
     let fanletterAnimating = false;
     const fanletterContent = fanletterText.querySelector('.fanletter-text-content');
 

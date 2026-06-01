@@ -1878,6 +1878,10 @@
   align-items: start;
 }
 
+.gift-load-more {
+  display: none;
+}
+
 /* 礼物卡片 */
 .gift-card {
   position: relative;
@@ -2821,6 +2825,23 @@ img, video, iframe {
   }
   .gift-showcase > .gift-card {
     --tilt: 0deg !important;
+  }
+  .gift-more-hidden {
+    display: none;
+  }
+  .gift-load-more {
+    display: block;
+    margin: 16px auto 12px;
+    padding: 10px 28px;
+    background: #fff;
+    border: 1px solid rgba(212, 112, 138, 0.2);
+    border-radius: 24px;
+    color: #d4708a;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'LXGW WenKai', 'Noto Sans JP', sans-serif;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
   }
   .page-title-note {
     font-size: 12px;
