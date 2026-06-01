@@ -873,6 +873,7 @@ class DanmakuAutoPlayer {
     this.data = data || [];
     const isMobile = window.innerWidth <= 768;
     this.interval = options.interval || (isMobile ? 4000 : 2000);
+    this.maxTextLen = options.maxTextLen || 91;
     this.intervalId = null;
   }
 
@@ -885,11 +886,20 @@ class DanmakuAutoPlayer {
     }, this.interval);
   }
 
+  _isTooLong(item) {
+    return item.text.length > this.maxTextLen || item.cnText.length > this.maxTextLen;
+  }
+
   _emitOne() {
     if (this.data.length === 0) return;
-    const idx = Math.floor(Math.random() * this.data.length);
-    const item = this.data[idx];
-    this.manager.createDanmaku(item.name, item.text, item.cnText);
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const idx = Math.floor(Math.random() * this.data.length);
+      const item = this.data[idx];
+      if (!this._isTooLong(item)) {
+        this.manager.createDanmaku(item.name, item.text, item.cnText);
+        return;
+      }
+    }
   }
 
   stop() {
@@ -951,7 +961,6 @@ class MusicPlayer {
     const track = this.playlist[index];
     if (!track) return;
     this.audio.src = track.src;
-    this.audio.loop = true;
     if (this.badge) this.badge.textContent = track.badge;
     // 如果当前正在播放，切换src后自动续播
     if (this.isPlaying) {
@@ -1001,6 +1010,10 @@ class MusicPlayer {
     this.btn.addEventListener('touchstart', this._touchStartHandler, { passive: true });
     this.btn.addEventListener('touchend', this._touchEndHandler, { passive: true });
     this.btn.addEventListener('touchmove', this._touchMoveHandler, { passive: true });
+
+    // 歌曲播完自动切到下一首
+    this._endedHandler = () => this.switchTrack();
+    this.audio.addEventListener('ended', this._endedHandler);
   }
 
   play() {
@@ -1025,6 +1038,7 @@ class MusicPlayer {
     this.btn.removeEventListener('touchstart', this._touchStartHandler);
     this.btn.removeEventListener('touchend', this._touchEndHandler);
     this.btn.removeEventListener('touchmove', this._touchMoveHandler);
+    this.audio.removeEventListener('ended', this._endedHandler);
     this.audio.pause();
     this.audio.src = '';
     this.audio = null;
@@ -1036,6 +1050,7 @@ class MusicPlayer {
     this._touchStartHandler = null;
     this._touchEndHandler = null;
     this._touchMoveHandler = null;
+    this._endedHandler = null;
     this._touchFired = false;
   }
 }
@@ -1745,6 +1760,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (novelSynopsis && novelSynopsisHint) {
     let isJp = false;
     let isAnimating = false;
+    const novelSynopsisInner = novelSynopsis.querySelector('.novel-synopsis-inner');
+    const novelSynopsisCN = novelSynopsis.querySelector('.novel-synopsis-cn');
+    const novelSynopsisJP = novelSynopsis.querySelector('.novel-synopsis-jp');
+
+    const syncSynopsisHeight = () => {
+      if (!novelSynopsisInner) return;
+      const activeEl = isJp ? novelSynopsisJP : novelSynopsisCN;
+      if (activeEl) {
+        activeEl.style.position = 'relative';
+        activeEl.style.visibility = 'hidden';
+        activeEl.style.opacity = '1';
+        const height = activeEl.scrollHeight;
+        activeEl.style.position = '';
+        activeEl.style.visibility = '';
+        activeEl.style.opacity = '';
+        novelSynopsisInner.style.height = height + 'px';
+      }
+    };
+    syncSynopsisHeight();
 
     novelSynopsisHint.addEventListener('click', () => {
       if (isAnimating) return;
@@ -1764,8 +1798,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         novelSynopsis.classList.toggle('is-jp', isJp);
         novelSynopsis.classList.remove('is-switching', 'is-switching-back');
         novelSynopsisHint.textContent = isJp ? '点击切换中文 ▸' : '日本語で読む ▸';
+        syncSynopsisHeight();
         isAnimating = false;
       }, totalDuration);
+    });
+  }
+
+  // ===== 粉丝来信文字切换 =====
+  const fanletterText = document.getElementById('fanletterText');
+  const fanletterSwitch = document.getElementById('fanletterSwitch');
+  const fanletterCN = document.getElementById('fanletterCN');
+  const fanletterJP = document.getElementById('fanletterJP');
+  if (fanletterText && fanletterSwitch) {
+    let isFanletterJp = false;
+    let fanletterAnimating = false;
+    const fanletterContent = fanletterText.querySelector('.fanletter-text-content');
+
+    const syncFanletterHeight = () => {
+      if (!fanletterContent) return;
+      const activeEl = isFanletterJp ? fanletterJP : fanletterCN;
+      if (activeEl) {
+        activeEl.style.position = 'relative';
+        activeEl.style.visibility = 'hidden';
+        activeEl.style.opacity = '1';
+        const height = activeEl.scrollHeight;
+        activeEl.style.position = '';
+        activeEl.style.visibility = '';
+        activeEl.style.opacity = '';
+        fanletterContent.style.height = height + 'px';
+      }
+    };
+    syncFanletterHeight();
+
+    fanletterSwitch.addEventListener('click', () => {
+      if (fanletterAnimating) return;
+      fanletterAnimating = true;
+
+      if (!isFanletterJp) {
+        fanletterText.classList.add('is-switching');
+        fanletterText.classList.remove('is-switching-back');
+      } else {
+        fanletterText.classList.add('is-switching-back');
+        fanletterText.classList.remove('is-switching');
+      }
+
+      setTimeout(() => {
+        isFanletterJp = !isFanletterJp;
+        fanletterText.classList.toggle('is-jp', isFanletterJp);
+        fanletterText.classList.remove('is-switching', 'is-switching-back');
+        fanletterSwitch.textContent = isFanletterJp ? '点击切换中文 ▸' : '日本語で読む ▸';
+        syncFanletterHeight();
+        fanletterAnimating = false;
+      }, 650);
     });
   }
 
