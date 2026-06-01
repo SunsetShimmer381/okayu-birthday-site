@@ -1870,6 +1870,55 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // ===== 粉丝来信 2 文字切换 =====
+  const fanletterText2 = document.getElementById('fanletterText2');
+  const fanletterSwitch2 = document.getElementById('fanletterSwitch2');
+  const fanletterCN2 = document.getElementById('fanletterCN2');
+  const fanletterJP2 = document.getElementById('fanletterJP2');
+  if (fanletterText2 && fanletterSwitch2) {
+    let isFanletterJp2 = true;
+    let fanletterAnimating2 = false;
+    const fanletterContent2 = fanletterText2.querySelector('.fanletter-text-content');
+
+    const syncFanletterHeight2 = () => {
+      if (!fanletterContent2) return;
+      const activeEl = isFanletterJp2 ? fanletterJP2 : fanletterCN2;
+      if (activeEl) {
+        activeEl.style.position = 'relative';
+        activeEl.style.visibility = 'hidden';
+        activeEl.style.opacity = '1';
+        const height = activeEl.scrollHeight;
+        activeEl.style.position = '';
+        activeEl.style.visibility = '';
+        activeEl.style.opacity = '';
+        fanletterContent2.style.height = height + 'px';
+      }
+    };
+    syncFanletterHeight2();
+
+    fanletterSwitch2.addEventListener('click', () => {
+      if (fanletterAnimating2) return;
+      fanletterAnimating2 = true;
+
+      if (!isFanletterJp2) {
+        fanletterText2.classList.add('is-switching');
+        fanletterText2.classList.remove('is-switching-back');
+      } else {
+        fanletterText2.classList.add('is-switching-back');
+        fanletterText2.classList.remove('is-switching');
+      }
+
+      setTimeout(() => {
+        isFanletterJp2 = !isFanletterJp2;
+        fanletterText2.classList.toggle('is-jp', isFanletterJp2);
+        fanletterText2.classList.remove('is-switching', 'is-switching-back');
+        fanletterSwitch2.textContent = isFanletterJp2 ? '点击切换中文 ▸' : '日本語で読む ▸';
+        syncFanletterHeight2();
+        fanletterAnimating2 = false;
+      }, 650);
+    });
+  }
+
   // Page3 时间线中内联视频链接（如"自我介绍视频"）
   document.querySelectorAll('.timeline-video-link').forEach(link => {
     link.addEventListener('click', (e) => {

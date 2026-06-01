@@ -170,8 +170,8 @@ sssdsd/
 
 | 字体 | 用途 | 来源 |
 |------|------|------|
-| LXGW WenKai | 中文正文 | jsDelivr CDN |
-| Noto Sans JP | 日文正文 | Google Fonts |
+| LXGW WenKai | 中日正文（优先） | jsDelivr CDN |
+| Klee One | 中日正文（回退） | Google Fonts |
 
 ---
 

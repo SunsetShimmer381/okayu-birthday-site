@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
 @import url('https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.1.0/style.css');
 
   * {
@@ -12,7 +12,7 @@
   }
 
   body {
-    font-family: 'LXGW WenKai', 'Noto Sans JP', sans-serif;
+    font-family: var(--font-display);
     background-color: #fff5f8;
     color: #333;
     line-height: 1.6;
@@ -219,12 +219,12 @@
 
   /* ===== 拍立得相纸卡片 ===== */
   :root {
+    --font-display: 'LXGW WenKai', 'Klee One', serif;
     --accent: #d4708a;
     --accent-2: #c06078;
     --accent-3: #e89bb3;
     --ink-soft: #666;
     --sakura-deep: #d4708a;
-    --font-display: 'Noto Sans JP', sans-serif;
   }
 
   .portrait-card {
@@ -1063,7 +1063,7 @@
     font-size: 13px;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-family: 'LXGW WenKai', 'Noto Sans JP', sans-serif;
+    font-family: var(--font-display);
     letter-spacing: 1px;
   }
 
@@ -1103,7 +1103,7 @@
     border-radius: 4px;
     font-size: 11px;
     color: #fff;
-    font-family: monospace;
+    font-family: var(--font-display);
   }
 
   .video-info {
@@ -1309,10 +1309,14 @@
     break-inside: avoid;
     margin-bottom: 20px;
     transform: rotate(var(--tilt, -0.6deg));
-    perspective: 800px;
+    /* 移除 perspective，避免影响文本渲染 */
     cursor: default;
     /* 移除 overflow:hidden，让胶带贴纸可以完整显示 */
     overflow: visible;
+    /* 优化文本渲染质量 */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
    }
 
    .message-card.flippable {
@@ -1348,8 +1352,20 @@
     padding: 20px 22px;
   }
 
+  .message-card-front {
+    font-family: var(--font-display);
+    /* 优化文本渲染，避免旋转导致的模糊 */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* 使用 3D 加速提升渲染质量 */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
   .message-card-back {
     transform: rotateY(180deg);
+    font-family: var(--font-display);
   }
 
   /* 胶带装饰 — 手撕便签风 */
@@ -1864,7 +1880,7 @@
   font-size: 13px;
   color: #b09090;
   letter-spacing: 2px;
-  font-family: 'Noto Sans JP', sans-serif;
+  font-family: var(--font-display);
   margin-top: 8px;
   margin-bottom: 36px;
 }
@@ -2058,7 +2074,7 @@
   letter-spacing: 1px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   transition: all 0.3s ease;
-  font-family: 'Noto Sans JP', sans-serif;
+  font-family: var(--font-display);
   font-weight: 500;
 }
 
@@ -2073,7 +2089,7 @@
   letter-spacing: 1px;
   color: #c8a0b0;
   margin-bottom: 3px;
-  font-family: 'Noto Sans JP', sans-serif;
+  font-family: var(--font-display);
 }
 
 .gift-card-title {
@@ -2095,7 +2111,7 @@
   font-size: 11px;
   color: #c8a0b0;
   margin-top: 6px;
-  font-family: 'Noto Sans JP', sans-serif;
+  font-family: var(--font-display);
   letter-spacing: 0.5px;
 }
 
@@ -2110,7 +2126,7 @@
   font-weight: 600;
   color: #9b7b7b;
   letter-spacing: 4px;
-  font-family: 'LXGW WenKai', 'Noto Sans JP', serif;
+  font-family: var(--font-display);
 }
 
 .book-divider-sub {
@@ -2148,6 +2164,7 @@
 .novel-synopsis-inner {
   padding: 20px 24px 16px;
   position: relative;
+  overflow: hidden;
   transition: height 0.35s ease;
 }
 
@@ -2222,15 +2239,29 @@
   margin: 0 0 14px;
 }
 
-.novel-synopsis p {
+.novel-synopsis-cn p {
   font-size: 14px;
   color: #6b5b5b;
   line-height: 2;
   margin: 0 0 12px;
   text-indent: 2em;
+  font-family: var(--font-display);
 }
 
-.novel-synopsis p:last-child {
+.novel-synopsis-cn p:last-child {
+  margin-bottom: 0;
+}
+
+.novel-synopsis-jp p {
+  font-size: 14px;
+  color: #6b5b5b;
+  line-height: 2;
+  margin: 0 0 12px;
+  text-indent: 2em;
+  font-family: var(--font-display);
+}
+
+.novel-synopsis-jp p:last-child {
   margin-bottom: 0;
 }
 
@@ -2240,6 +2271,8 @@
 }
 
 .novel-synopsis-hint {
+  position: relative;
+  z-index: 1;
   text-align: center;
   padding: 8px 0 14px;
   font-size: 12px;
@@ -2298,7 +2331,7 @@
   color: #c0a8a8;
   letter-spacing: 0.5px;
   min-width: 30px;
-  font-family: 'Noto Sans JP', sans-serif;
+  font-family: var(--font-display);
 }
 
 .chapter-title {
@@ -2386,11 +2419,15 @@
 
 .fanletter-inner {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 300px;
   gap: 40px;
   align-items: center;
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
+}
+
+.fanletter-inner-flip {
+  grid-template-columns: 300px 1fr;
 }
 
 /* 左：信件内容 */
@@ -2400,6 +2437,7 @@
 
 .fanletter-text-content {
   position: relative;
+  overflow: hidden;
   transition: height 0.35s ease;
 }
 
@@ -2450,7 +2488,7 @@
   letter-spacing: 3px;
   text-align: center;
   margin: 0 0 16px;
-  font-family: 'Noto Sans JP', sans-serif;
+  font-family: var(--font-display);
 }
 
 .fanletter-cn p,
@@ -2462,12 +2500,22 @@
   text-indent: 2em;
 }
 
+.fanletter-cn p {
+  font-family: var(--font-display);
+}
+
+.fanletter-jp p {
+  font-family: var(--font-display);
+}
+
 .fanletter-cn p:last-child,
 .fanletter-jp p:last-child {
   margin-bottom: 0;
 }
 
 .fanletter-switch {
+  position: relative;
+  z-index: 1;
   text-align: center;
   padding: 14px 0 0;
   font-size: 12px;
@@ -2511,21 +2559,29 @@
   color: #b09090;
   letter-spacing: 1px;
   margin: 0;
-  font-family: 'Noto Sans JP', sans-serif;
+  font-family: var(--font-display);
 }
 
 @media (max-width: 768px) {
-  .fanletter-inner {
+  .fanletter-inner,
+  .fanletter-inner-flip {
     grid-template-columns: 1fr;
     gap: 24px;
+    max-width: 100%;
   }
 
   .fanletter-image {
     order: -1;
+    width: 100%;
   }
 
   .fanletter-image-inner {
     max-width: 220px;
+    margin: 0 auto;
+  }
+
+  .fanletter-signature {
+    text-align: center;
   }
 
   .fanletter-cn p,
@@ -2722,7 +2778,7 @@ img, video, iframe {
   }
 
   .mobile-nav-item .mn-label {
-    font-family: 'LXGW WenKai', 'Noto Sans JP', sans-serif;
+    font-family: var(--font-display);
     font-size: 10px;
     line-height: 1.2;
   }
@@ -2839,7 +2895,7 @@ img, video, iframe {
     color: #d4708a;
     font-size: 13px;
     cursor: pointer;
-    font-family: 'LXGW WenKai', 'Noto Sans JP', sans-serif;
+    font-family: var(--font-display);
     letter-spacing: 1px;
     transition: all 0.3s ease;
   }
