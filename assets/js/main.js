@@ -662,10 +662,14 @@ class MessageBoardRenderer {
     card.style.animationDelay = `${index * 0.1}s`;
 
     const colorIndex = index % this.cardColors.length;
-    card.style.background = this.cardColors[colorIndex];
+    // 改为 CSS 变量，背景由 .message-card::before 承载，文字层不旋转
+    card.style.setProperty('--card-bg', this.cardColors[colorIndex]);
 
-    const randomRotation = (Math.random() * 2.4 - 1.2).toFixed(2);
-    card.style.setProperty('--tilt', `${randomRotation}deg`);
+    // 角度只作用于 ::before 背景层（无文字），但仍把分布推离 0 附近
+    // 避免极小角度（如 0.1deg）让背景边缘锯齿过于明显
+    const sign = Math.random() < 0.5 ? -1 : 1;
+    const magnitude = 0.8 + Math.random() * 1.6; // 0.8 ~ 2.4 度
+    card.style.setProperty('--tilt', `${(sign * magnitude).toFixed(2)}deg`);
 
     const inner = document.createElement('div');
     inner.className = 'message-card-inner';
