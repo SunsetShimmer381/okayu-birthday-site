@@ -1366,10 +1366,9 @@
     cursor: pointer;
   }
 
-  /* hover：上浮 + 背景归零旋转。整个过程没有任何元素带 rotate 文字 */
-  .message-card-hover {
-    transform: translateY(-2px) !important;
-  }
+  /* hover：上浮 + 鼠标跟随倾斜由 JS 内联 transform 接管（见 main.js），
+     这里不再写 transform，避免 !important 抢夺内联倾斜值导致背面/正面失效。
+     仅保留背景层归零旋转 + 高光，纯视觉、无文字 rotate。 */
   .message-card-hover::before {
     transform: rotate(0deg) translateZ(0) !important;
     box-shadow:

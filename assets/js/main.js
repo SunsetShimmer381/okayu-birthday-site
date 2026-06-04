@@ -709,15 +709,43 @@ class MessageBoardRenderer {
       });
     }
 
-    card.addEventListener('mouseenter', () => {
-      if (!inner.classList.contains('flipped')) {
-        card.classList.add('message-card-hover');
-      }
-    });
+    // 桌面端「鼠标跟随 3D 倾斜」——刻意作用在最外层 .message-card 上。
+    // 翻面(rotateY 180deg)只改内层 .message-card-inner，倾斜只改外层 card，
+    // 两者作用于不同 DOM 节点 → 永不互相抢夺 transform，正反面共用同一套倾斜逻辑。
+    // 用 hover/pointer 媒体查询挡住触屏，移动端完全不挂这套监听（保留既有移动端体验）。
+    const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (supportsHover) {
+      const MAX_TILT = 6; // 最大倾斜角度（度）
+      let rafId = null;
 
-    card.addEventListener('mouseleave', () => {
-      card.classList.remove('message-card-hover');
-    });
+      card.addEventListener('mouseenter', () => {
+        card.classList.add('message-card-hover');
+        card.style.transition = 'transform 0.12s ease-out'; // 跟手：缩短过渡
+        card.style.transform = 'perspective(900px) translateY(-4px)'; // 进入即微抬
+      });
+
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const px = (e.clientX - rect.left) / rect.width;  // 0~1
+        const py = (e.clientY - rect.top) / rect.height;  // 0~1
+        const ry = (px - 0.5) * 2 * MAX_TILT;   // 左右 → 绕 Y 轴
+        const rx = (0.5 - py) * 2 * MAX_TILT;   // 上下 → 绕 X 轴
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          // perspective() 写进 transform 自身 → 倾斜立体感自洽，
+          // 与外层 .message-card 的 perspective 属性(供内层翻面用)互不干扰。
+          card.style.transform =
+            `perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) translateY(-4px)`;
+        });
+      });
+
+      card.addEventListener('mouseleave', () => {
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        card.classList.remove('message-card-hover');
+        card.style.transition = '';   // 交还给 CSS 默认 0.35s 过渡，平滑归位
+        card.style.transform = '';
+      });
+    }
 
     return card;
   }
