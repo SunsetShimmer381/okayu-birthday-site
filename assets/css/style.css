@@ -1384,7 +1384,11 @@
     z-index: 1;
     display: grid;
     width: 100%;
-    height: 100%;
+    /* 关键：高度由内容自然撑开，绝不写死/不绑定百分比父高。
+       inner 处于标准文档流(relative) → 它撑高谁就撑高 .message-card，
+       ::before 背景层用 inset:0 100% 贴合撑开后的高度，长留言不再溢出/重叠。 */
+    height: auto;
+    min-height: 180px;
     box-sizing: border-box;
     transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-transition: -webkit-transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -3018,8 +3022,9 @@ img, video, iframe {
      不随断点改变）→ 移动端字体同样 100% 清晰。
      旋转出血由父容器 overflow-x:hidden + 卡片左右 margin 安全距离共同兜底。 */
   .message-card {
-    /* 离屏安全边距：别让卡片贴着手机边框 */
-    margin: 12px 10px;
+    /* 离屏安全边距：别让卡片贴着手机边框；
+       底部加大到 2rem，长留言撑高后强制拉开上下卡片，杜绝视觉粘连/重叠 */
+    margin: 12px 10px 2rem;
   }
   /* 关键修复：移动端 --tilt 重新启用后，与卡片等尺寸的背景层旋转会让四角
      露出无背景的三角，长卡片尤其明显（表现为"内容溢出背景"）。
@@ -3039,17 +3044,29 @@ img, video, iframe {
     margin-top: -22px;
   }
 
-  /* 14) 分页按钮：触达 ≥ 44x44（WCAG/iOS HIG 推荐） */
+  /* 14) 分页器：窄屏强制换行，避免 1~15 页码排成一行撑爆视口宽度 */
   .pagination {
-    gap: 6px;
+    display: flex;
     flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
   }
+  /* 页码真正所在的内层容器——之前只在 .pagination 上加了 wrap，
+     而所有页码都挤在这个不换行的 flex 行里，才是横向溢出的元凶 */
+  .pagination-numbers {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  /* 适当收小尺寸：多行页码紧凑精致，不占用过多垂直空间 */
   .pagination-btn,
   .pagination-number {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    font-size: 15px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0;
+    font-size: 13px;
   }
 
   /* 15) 粉丝来信切换按钮：放大点击热区 */
@@ -3113,13 +3130,19 @@ img, video, iframe {
     max-height: none;
   }
 
-  /* 超窄屏：分页按钮缩到 40 但保留 hit-padding 让总热区 ≥ 44 */
+  /* 超窄屏：再收一档，多行页码更紧凑（换行能力继承自 768 断点的 .pagination-numbers） */
+  .pagination {
+    gap: 6px;
+  }
+  .pagination-numbers {
+    gap: 6px;
+  }
   .pagination-btn,
   .pagination-number {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    font-size: 14px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    font-size: 12px;
   }
 
   /* 超窄屏：粉丝来信内文进一步收字号 */
