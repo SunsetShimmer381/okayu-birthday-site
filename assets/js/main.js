@@ -445,17 +445,17 @@ class DanmakuManager {
     el.dataset.name = escapedName;
     el.dataset.duration = durationSec;
 
-    // 弹幕 position:fixed 挂到 body，不受容器高度限制
-    // topPct 相对于视口高度（容器 top + topPct% 容器高度）
-    const containerTop = this.container.getBoundingClientRect().top;
+    // 弹幕挂载进 #danmakuContainer 内部，享受容器的 mask 上下渐隐软边界。
+    // 容器自身是 position:fixed，天然是绝对定位子元素的包含块，
+    // 因此这里用 position:absolute，top 相对「容器自身高度」计算即可，
+    // 不再需要叠加容器在视口中的偏移（getBoundingClientRect().top）。
     const containerHeight = this.container.offsetHeight;
-    const absoluteTop = containerTop + (containerHeight * topPct / 100);
-    el.style.top = `${absoluteTop}px`;
-    el.style.position = 'fixed';
+    el.style.top = `${containerHeight * topPct / 100}px`;
+    el.style.position = 'absolute';
     el.style.animationDuration = `${durationSec}s`;
 
     this.danmakus.add(el);
-    document.body.appendChild(el);
+    this.container.appendChild(el);
 
     if (escapedCnText) {
       el.addEventListener('click', (e) => {
@@ -938,7 +938,25 @@ class DanmakuAutoPlayer {
 
 // 初始化弹幕自动播放器
 const danmakuAutoPlayer = new DanmakuAutoPlayer(danmakuManager, sampleDanmaku);
-danmakuAutoPlayer.start();
+
+// 等 webfont（LXGW WenKai / Klee One）加载完再开始发射，
+// 否则首条弹幕会先用 serif 兜底字形渲染，字体到位后触发 swap 重排，
+// 表现为"第一条弹幕飞到中途突然变大"的 FOUT 尺寸跳变。
+(function startDanmakuWhenFontReady() {
+  let started = false;
+  const startOnce = () => {
+    if (started) return;
+    started = true;
+    danmakuAutoPlayer.start();
+  };
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(startOnce);
+    // 兜底：字体加载失败/超时也要正常发弹幕，避免一直空屏
+    setTimeout(startOnce, 3000);
+  } else {
+    startOnce();
+  }
+})();
 
 // 渲染留言板
 const messageBoardRenderer = new MessageBoardRenderer(sampleDanmaku);

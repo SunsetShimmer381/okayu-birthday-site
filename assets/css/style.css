@@ -1591,10 +1591,13 @@
     right: 0;
     height: calc(60vh - 90px);
     pointer-events: none;
-    z-index: 9999;
+    /* 弹幕层：高于全站卡片内容(≤100)，但低于导航栏(1000)/控制按钮(999)/弹窗(2000+)，
+       确保弹幕压在卡片之上又永不遮挡导航与控制按钮。容器本身 fixed，
+       作为内部 .danmaku-item 绝对定位的包含块。 */
+    z-index: 998;
     contain: layout style;
     user-select: none;
-    /* 用渐变遮罩实现软边界，而不是硬裁切 */
+    /* 用渐变遮罩实现上下软边界（现在弹幕已挂进容器，mask 才真正生效） */
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 5%, #000 95%, transparent 100%);
     mask-image: linear-gradient(to bottom, transparent 0%, #000 5%, #000 95%, transparent 100%);
     -webkit-mask-size: 100% 100%;
@@ -1615,6 +1618,14 @@
     cursor: pointer;
     transition: transform 0.2s ease, background-color 0.2s ease;
     will-change: transform;
+    /* 稳定 iOS 合成层：强制整层背板光栅化，避免宽 fixed 元素高速平移时
+       前导边被分块重绘（tile）裁切，根治"拦腰截断" Render Layer 撕裂 */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-perspective: 1000;
+    perspective: 1000;
     /* 防止弹幕把导航栏挡住 */
     z-index: 1;
     /* 文字加一个极淡描边，在浅色背景上更清晰 */
