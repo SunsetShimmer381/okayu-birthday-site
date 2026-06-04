@@ -715,7 +715,7 @@ class MessageBoardRenderer {
     // 用 hover/pointer 媒体查询挡住触屏，移动端完全不挂这套监听（保留既有移动端体验）。
     const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     if (supportsHover) {
-      const MAX_TILT = 6; // 最大倾斜角度（度）
+      const MAX_TILT = 4; // 最大倾斜角度（度）— 压在亚像素错位不敏感阈值内，倾斜瞬间的 GPU 柔化看起来更像自然动态模糊
       let rafId = null;
 
       card.addEventListener('mouseenter', () => {
