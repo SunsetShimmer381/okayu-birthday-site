@@ -425,8 +425,14 @@ class DanmakuManager {
     this._recordSent(text);
 
     const durationSec = this.minDuration + Math.random() * (this.maxDuration - this.minDuration);
-    // top% 在容器高度范围内随机发射，容器 overflow:hidden 自动裁切
-    const topPct = Math.random() * 100;
+    // top% 在容器高度范围内随机发射，但要预留弹幕自身高度避免被裁切
+    // 弹幕高度约为 32px（PC端）或 24px（移动端）
+    const danmakuHeight = this.isMobile ? 24 : 32;
+    const containerHeight = this.container.offsetHeight;
+    // 可用高度 = 容器高度 - 弹幕高度
+    const availableHeight = Math.max(0, containerHeight - danmakuHeight);
+    // 在可用范围内随机位置
+    const topPct = (Math.random() * availableHeight / containerHeight) * 100;
     return this._emit(name, text, cnText, topPct, durationSec);
   }
 
@@ -445,17 +451,17 @@ class DanmakuManager {
     el.dataset.name = escapedName;
     el.dataset.duration = durationSec;
 
-    // 弹幕挂载进 #danmakuContainer 内部，享受容器的 mask 上下渐隐软边界。
-    // 容器自身是 position:fixed，天然是绝对定位子元素的包含块，
-    // 因此这里用 position:absolute，top 相对「容器自身高度」计算即可，
-    // 不再需要叠加容器在视口中的偏移（getBoundingClientRect().top）。
+    // 弹幕 position:fixed 挂到 body，不受容器高度限制
+    // topPct 相对于视口高度（容器 top + topPct% 容器高度）
+    const containerTop = this.container.getBoundingClientRect().top;
     const containerHeight = this.container.offsetHeight;
-    el.style.top = `${containerHeight * topPct / 100}px`;
-    el.style.position = 'absolute';
+    const absoluteTop = containerTop + (containerHeight * topPct / 100);
+    el.style.top = `${absoluteTop}px`;
+    el.style.position = 'fixed';
     el.style.animationDuration = `${durationSec}s`;
 
     this.danmakus.add(el);
-    this.container.appendChild(el);
+    document.body.appendChild(el);
 
     if (escapedCnText) {
       el.addEventListener('click', (e) => {
@@ -612,7 +618,7 @@ class MessageBoardRenderer {
       this.render();
     };
     window.addEventListener('resize', this._resizeHandler);
-
+    
     this.render();
   }
 
@@ -676,14 +682,10 @@ class MessageBoardRenderer {
     card.style.animationDelay = `${index * 0.1}s`;
 
     const colorIndex = index % this.cardColors.length;
-    // 改为 CSS 变量，背景由 .message-card::before 承载，文字层不旋转
-    card.style.setProperty('--card-bg', this.cardColors[colorIndex]);
+    card.style.background = this.cardColors[colorIndex];
 
-    // 角度只作用于 ::before 背景层（无文字），但仍把分布推离 0 附近
-    // 避免极小角度（如 0.1deg）让背景边缘锯齿过于明显
-    const sign = Math.random() < 0.5 ? -1 : 1;
-    const magnitude = 0.8 + Math.random() * 1.6; // 0.8 ~ 2.4 度
-    card.style.setProperty('--tilt', `${(sign * magnitude).toFixed(2)}deg`);
+    const randomRotation = (Math.random() * 2.4 - 1.2).toFixed(2);
+    card.style.setProperty('--tilt', `${randomRotation}deg`);
 
     const inner = document.createElement('div');
     inner.className = 'message-card-inner';
@@ -697,57 +699,52 @@ class MessageBoardRenderer {
 
     if (item.cnText) {
       card.classList.add('flippable');
-      // 纯 CSS 翻面：卡片高度由 grid(正反面同处 1/1 单元格)自动取较高者撑开，
-      // 正反面恒等高 → 任何字数都不溢出，无需再用 JS 测量/锁定高度（旧逻辑会把
-      // 错误测高死锁在卡片上，导致背面长文脱框）。这里只保留一个防连点的软锁。
-      let flipLock = false;
       card.addEventListener('click', () => {
-        if (flipLock) return;
-        flipLock = true;
-        inner.classList.toggle('flipped');
-        setTimeout(() => { flipLock = false; }, 600); // 与 rotateY 0.6s 过渡同步
+        if (inner.classList.contains('flipping')) return;
+        inner.classList.add('flipping');
+        this.matchCardHeight(card, inner, !inner.classList.contains('flipped'));
+        setTimeout(() => {
+          inner.classList.toggle('flipped');
+          this.releaseCardHeight(card, inner);
+          inner.classList.remove('flipping');
+        }, 50);
       });
     }
 
-    // 桌面端「鼠标跟随 3D 倾斜」——刻意作用在最外层 .message-card 上。
-    // 翻面(rotateY 180deg)只改内层 .message-card-inner，倾斜只改外层 card，
-    // 两者作用于不同 DOM 节点 → 永不互相抢夺 transform，正反面共用同一套倾斜逻辑。
-    // 用 hover/pointer 媒体查询挡住触屏，移动端完全不挂这套监听（保留既有移动端体验）。
-    const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-    if (supportsHover) {
-      const MAX_TILT = 4; // 最大倾斜角度（度）— 压在亚像素错位不敏感阈值内，倾斜瞬间的 GPU 柔化看起来更像自然动态模糊
-      let rafId = null;
-
-      card.addEventListener('mouseenter', () => {
+    card.addEventListener('mouseenter', () => {
+      if (!inner.classList.contains('flipped')) {
         card.classList.add('message-card-hover');
-        card.style.transition = 'transform 0.12s ease-out'; // 跟手：缩短过渡
-        card.style.transform = 'perspective(900px) translateY(-4px)'; // 进入即微抬
-      });
+      }
+    });
 
-      card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const px = (e.clientX - rect.left) / rect.width;  // 0~1
-        const py = (e.clientY - rect.top) / rect.height;  // 0~1
-        const ry = (px - 0.5) * 2 * MAX_TILT;   // 左右 → 绕 Y 轴
-        const rx = (0.5 - py) * 2 * MAX_TILT;   // 上下 → 绕 X 轴
-        if (rafId) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(() => {
-          // perspective() 写进 transform 自身 → 倾斜立体感自洽，
-          // 与外层 .message-card 的 perspective 属性(供内层翻面用)互不干扰。
-          card.style.transform =
-            `perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) translateY(-4px)`;
-        });
-      });
-
-      card.addEventListener('mouseleave', () => {
-        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-        card.classList.remove('message-card-hover');
-        card.style.transition = '';   // 交还给 CSS 默认 0.35s 过渡，平滑归位
-        card.style.transform = '';
-      });
-    }
+    card.addEventListener('mouseleave', () => {
+      card.classList.remove('message-card-hover');
+    });
 
     return card;
+  }
+
+  matchCardHeight(card, inner, toBack) {
+    const targetFace = toBack
+      ? inner.querySelector('.message-card-back')
+      : inner.querySelector('.message-card-front');
+    const temp = targetFace.cloneNode(true);
+    temp.style.position = 'absolute';
+    temp.style.visibility = 'hidden';
+    temp.style.width = card.clientWidth + 'px';
+    temp.style.backfaceVisibility = 'visible';
+    temp.style.transform = 'none';
+    document.body.appendChild(temp);
+    const height = temp.offsetHeight;
+    document.body.removeChild(temp);
+    card.style.transition = 'height 0.3s ease';
+    card.style.height = height + 'px';
+  }
+
+  releaseCardHeight(card, inner) {
+    setTimeout(() => {
+      card.style.transition = '';
+    }, 350);
   }
 
   createCardFace(item, face) {
@@ -808,7 +805,7 @@ class MessageBoardRenderer {
       this.elements.paginationNext.disabled = this.currentPage === totalPages;
     }
 
-    // 移动端：极简模式（首页 · 当前页 · 末页，其余以 … 省略），避免窄屏页码挤爆
+    // 移动端：极简模式（仅显示首页、当前页、末页，其余以 … 省略），避免窄屏页码挤爆
     if (this._isMobile) {
       this.renderMobilePagination(totalPages);
       return;
@@ -847,18 +844,37 @@ class MessageBoardRenderer {
   }
 
   renderMobilePagination(totalPages) {
-    // 仅显示首页、当前页、末页三个关键页码，相邻空档用 … 省略。
+    // 移动端显示：首页 + 当前页前后各1页（共3个中间页码）+ 末页
     // 配合左右 ‹ › 按钮，窄屏也能逐页翻动且不撑爆宽度。
-    const keyPages = [...new Set([1, this.currentPage, totalPages])]
-      .filter(p => p >= 1 && p <= totalPages)
-      .sort((a, b) => a - b);
-
-    let prev = 0;
-    keyPages.forEach(page => {
-      if (page - prev > 1) this.addDots();
-      this.addPageNumber(page);
-      prev = page;
-    });
+    
+    // 首页
+    this.addPageNumber(1);
+    
+    // 中间3个关键页码：当前页前后各1页
+    const prevPage = Math.max(2, this.currentPage - 1);
+    const nextPage = Math.min(totalPages - 1, this.currentPage + 1);
+    
+    // 首页与中间区域之间需要省略号
+    if (prevPage > 2) {
+      this.addDots();
+    }
+    
+    // 添加中间页码（确保不重复首页和末页）
+    for (let i = prevPage; i <= nextPage; i++) {
+      if (i !== 1 && i !== totalPages) {
+        this.addPageNumber(i);
+      }
+    }
+    
+    // 中间区域与末页之间需要省略号
+    if (nextPage < totalPages - 1) {
+      this.addDots();
+    }
+    
+    // 末页（总页数大于1才显示）
+    if (totalPages > 1) {
+      this.addPageNumber(totalPages);
+    }
   }
 
   addPageNumber(page) {
@@ -966,25 +982,7 @@ class DanmakuAutoPlayer {
 
 // 初始化弹幕自动播放器
 const danmakuAutoPlayer = new DanmakuAutoPlayer(danmakuManager, sampleDanmaku);
-
-// 等 webfont（LXGW WenKai / Klee One）加载完再开始发射，
-// 否则首条弹幕会先用 serif 兜底字形渲染，字体到位后触发 swap 重排，
-// 表现为"第一条弹幕飞到中途突然变大"的 FOUT 尺寸跳变。
-(function startDanmakuWhenFontReady() {
-  let started = false;
-  const startOnce = () => {
-    if (started) return;
-    started = true;
-    danmakuAutoPlayer.start();
-  };
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(startOnce);
-    // 兜底：字体加载失败/超时也要正常发弹幕，避免一直空屏
-    setTimeout(startOnce, 3000);
-  } else {
-    startOnce();
-  }
-})();
+danmakuAutoPlayer.start();
 
 // 渲染留言板
 const messageBoardRenderer = new MessageBoardRenderer(sampleDanmaku);
@@ -1398,16 +1396,6 @@ class ScrollHintController {
     this.update();
   }
 
-  // 兼容兜底：html/body 设了 overflow-x:hidden 后，overflow-y 计算值变 auto，
-  // 移动端(尤其 iOS Safari)会让 <body> 成为真正的滚动容器，此时 window.scrollY 恒为 0。
-  // 用 pageYOffset → documentElement → body 依次兜底，保证 PC / 移动端取值一致。
-  getScrollTop() {
-    return window.pageYOffset
-      || document.documentElement.scrollTop
-      || document.body.scrollTop
-      || 0;
-  }
-
   setupEventListeners() {
     this._pendingUpdate = false;
     this._scrollHandler = () => {
@@ -1420,6 +1408,16 @@ class ScrollHintController {
     };
     // capture:true → 即便滚动发生在 body(而非 window)上，捕获阶段也能在 window 接住事件
     window.addEventListener('scroll', this._scrollHandler, { passive: true, capture: true });
+  }
+
+  // 兼容兜底：html/body 设了 overflow-x:hidden 后，overflow-y 计算值变 auto，
+  // 移动端(尤其 iOS Safari)会让 <body> 成为真正的滚动容器，此时 window.scrollY 恒为 0。
+  // 用 pageYOffset → documentElement → body 依次兜底，保证 PC / 移动端取值一致。
+  getScrollTop() {
+    return window.pageYOffset
+      || document.documentElement.scrollTop
+      || document.body.scrollTop
+      || 0;
   }
 
   update() {

@@ -17,10 +17,6 @@
     color: #333;
     line-height: 1.6;
     padding-top: 80px;
-    /* 全局抗锯齿与文本渲染优化（针对带 transform 的元素根治亚像素模糊） */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
   }
 
   /* ===== 导航栏 ===== */
@@ -233,21 +229,13 @@
 
   .portrait-card {
     position: relative;
-    background-color: #fffaf3;
-    background-clip: padding-box;
-    -webkit-background-clip: padding-box;
+    background: #fffaf3;
     border-radius: 18px;
     padding: 14px 14px 0;
     display: flex;
     flex-direction: column;
-    transform: perspective(1000px) rotate(var(--tilt, -2deg)) translateZ(0);
-    transform-origin: center center;
+    transform: rotate(var(--tilt, -2deg)) translateZ(0);
     will-change: transform;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    text-shadow: 0 0 1px transparent;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     box-shadow:
       0 1px 0 rgba(255,255,255,0.9) inset,
       0 0 0 1px rgba(43,38,48,0.05),
@@ -259,6 +247,10 @@
   .portrait-card::after {
     content: '';
     position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     inset: 0;
     border-radius: inherit;
     background-image:
@@ -310,6 +302,8 @@
   .portrait-photo-wrap {
     position: relative;
     width: 100%;
+    height: 0;
+    padding-bottom: 100%;  /* iOS Safari <15 后备方案：1:1 比例 */
     aspect-ratio: 1/1;
     border-radius: 10px;
     overflow: hidden;
@@ -317,8 +311,20 @@
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
   }
 
+  /* 支持 aspect-ratio 的浏览器覆盖 padding-bottom */
+  @supports (aspect-ratio: 1) {
+    .portrait-photo-wrap {
+      height: auto;
+      padding-bottom: 0;
+    }
+  }
+
   .portrait-photo {
     position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     inset: 0;
     width: 100%;
     height: 100%;
@@ -1056,12 +1062,9 @@
     transition: transform 0.2s, box-shadow 0.2s;
   }
 
-  /* 仅鼠标设备启用悬浮上浮，避免 iOS 触屏 tap 残留 */
-  @media (hover: hover) {
-    .video-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(212, 112, 138, 0.15);
-    }
+  .video-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(212, 112, 138, 0.15);
   }
 
   .video-more-hidden {
@@ -1309,95 +1312,55 @@
     }
   }
 
-  /* ============================================================
-     留言卡片 — 结构分离重构
-     诊断：文字与 rotate 同处一个合成层时，分数度数（如 0.37deg）
-     会让 Klee One 的水平笔画整体落在亚像素上，所有 CSS hack 都救不回。
-     方案：::before 伪元素承载"旋转的彩色背景层"；
-          .message-card 本身不旋转，文字所在的 .message-card-inner
-          永远保持水平栅格 → 字体 100% 清晰。
-     ============================================================ */
+  /* 留言卡片样式 */
   .message-card {
-    /* 卡片本体：仅作定位与动画容器，绝对不参与任何 rotate */
-    position: relative;
-    /* iOS Safari 3D 结界：在翻转容器(.message-card-inner)的父级建立透视上下文，
-       这是 -webkit-backface-visibility 能稳定生效的前提。1000px 透视既保证翻面立体感，
-       又不至于在小角度下产生明显畸变。 */
-    perspective: 1000px;
-    -webkit-perspective: 1000px;
+    background: #FFE6ED;
     border-radius: 4px;
     padding: 0;
-    /* 上浮的位移过渡（hover 时用），不含 rotate 所以无亚像素风险 */
-    transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.25, 1), height 0.3s ease;
-    animation: fadeInUp 0.6s ease forwards;
-    opacity: 0;
-    break-inside: avoid;
-    margin-bottom: 20px;
-    cursor: default;
-    overflow: visible;
-    /* 兜底：文字平滑（即便不再 rotate，保留无害） */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  /* 彩色背景层：唯一承载 rotate 的元素，且没有任何文字 */
-  .message-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-color: var(--card-bg, #FFE6ED);
-    background-clip: padding-box;
-    -webkit-background-clip: padding-box;
-    border: 1px solid rgba(255, 182, 193, 0.15);
-    border-radius: inherit;
     box-shadow:
       2px 3px 10px rgba(0,0,0,0.05),
       0 6px 18px rgba(255, 182, 193, 0.15);
-    /* 仅这一层旋转 — 视觉错落感由它独自承担 */
-    transform: rotate(var(--tilt, -0.6deg)) translateZ(0);
-    transform-origin: center center;
-    will-change: transform;
-    transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.25, 1), box-shadow 0.35s ease;
-    z-index: 0;
-    pointer-events: none;  /* 点击/翻面事件透传到上层 inner */
-  }
+    border: 1px solid rgba(255, 182, 193, 0.15);
+    transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.25, 1), box-shadow 0.35s ease, height 0.3s ease;
+    animation: fadeInUp 0.6s ease forwards;
+    opacity: 0;
+    position: relative;
+    break-inside: avoid;
+    margin-bottom: 20px;
+    transform: rotate(var(--tilt, -0.6deg));
+    /* 移除 perspective，避免影响文本渲染 */
+    cursor: default;
+    /* 移除 overflow:hidden，让胶带贴纸可以完整显示 */
+    overflow: visible;
+    /* 优化文本渲染质量 */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+   }
 
-  .message-card.flippable {
-    cursor: pointer;
-  }
+   .message-card.flippable {
+     cursor: pointer;
+   }
 
-  /* hover：上浮 + 鼠标跟随倾斜由 JS 内联 transform 接管（见 main.js），
-     这里不再写 transform，避免 !important 抢夺内联倾斜值导致背面/正面失效。
-     仅保留背景层归零旋转 + 高光，纯视觉、无文字 rotate。 */
-  .message-card-hover::before {
-    transform: rotate(0deg) translateZ(0) !important;
+  /* 卡片悬浮状态 */
+  .message-card-hover {
+    transform: rotate(0deg) translateY(-2px) !important;
     box-shadow:
       3px 6px 20px rgba(0,0,0,0.08),
       0 12px 30px -10px rgba(255, 182, 193, 0.3),
       0 0 0 2px rgba(255, 182, 193, 0.3) !important;
   }
 
-  /* 3D 翻转容器 — 提到背景层之上，本体永不旋转（rotateY 仅用于翻面） */
+  /* 3D 翻转容器 */
   .message-card-inner {
-    position: relative;
-    z-index: 1;
     display: grid;
     width: 100%;
-    /* 关键：高度由内容自然撑开，绝不写死/不绑定百分比父高。
-       inner 处于标准文档流(relative) → 它撑高谁就撑高 .message-card，
-       ::before 背景层用 inset:0 100% 贴合撑开后的高度，长留言不再溢出/重叠。 */
-    height: auto;
-    min-height: 180px;
-    box-sizing: border-box;
     transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    -webkit-transition: -webkit-transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     transform-style: preserve-3d;
-    -webkit-transform-style: preserve-3d;
   }
 
   .message-card-inner.flipped {
     transform: rotateY(180deg);
-    -webkit-transform: rotateY(180deg);
   }
 
   .message-card-front,
@@ -1408,39 +1371,28 @@
     padding: 20px 22px;
   }
 
-  /* 正面文字：静态下无 rotate，保留基本平滑即可。
-     translateZ(1px)：强制 Safari 把该面提升为独立合成层，
-     避免正反面共层时 backface-visibility 被忽略而双面同显。 */
   .message-card-front {
-    transform: translateZ(1px);
-    -webkit-transform: translateZ(1px);
     font-family: var(--font-display);
+    /* 优化文本渲染，避免旋转导致的模糊 */
+    text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* 使用 3D 加速提升渲染质量 */
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 
-  /* 背面：rotateY 翻面 + translateZ 硬件分层（两者必须写在同一个 transform 里，
-     否则后者会覆盖前者导致背面不翻转）。 */
   .message-card-back {
-    transform: rotateY(180deg) translateZ(1px);
-    -webkit-transform: rotateY(180deg) translateZ(1px);
+    transform: rotateY(180deg);
     font-family: var(--font-display);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* 胶带装饰 — 手撕便签风
-     定位修复：改为相对所在卡面(.message-card-front/back，其 transform 已使之成为包含块)
-     绝对定位，彻底脱离正文流（不再"绑在字上"），稳定骑在卡片上沿——上半探出、下半压住。
-     z-index 抬到 ::before 背景层(0)之上，避免被背景"吃"进卡里。 */
+  /* 胶带装饰 — 手撕便签风 */
   .message-tape {
-    position: absolute;
-    top: -7px;            /* 14px 高 → 上 7px 探出、下 7px 压住，正好一半一半 */
-    left: 50%;
-    z-index: 4;
+    display: block;
     width: 48px;
     height: 14px;
-    margin: 0;
+    margin: -26px auto 10px;
     background: linear-gradient(
       135deg,
       rgba(255,255,255,0.7) 0%,
@@ -1448,10 +1400,7 @@
       rgba(245,235,225,0.4) 100%
     );
     border-radius: 1px;
-    transform: translateX(-50%) rotate(-5deg);
-    /* 正反面各有一条胶带；背向时隐藏，避免在 preserve-3d 下镜像穿透到正面 */
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+    transform: rotate(-5deg);
     pointer-events: none;
     box-shadow:
       0 1px 2px rgba(0,0,0,0.04),
@@ -1465,16 +1414,6 @@
     min-height: 3em;
   }
 
-  /* 卡片正文文字：显式打开 hack，避免某些浏览器对子元素不级联 text-shadow */
-  .message-text {
-    text-shadow: 0 0 1px transparent;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    /* 超长不换行字符串(长 URL / 连续英文)兜底断行，防止撑宽卡片导致文字越出背景框 */
-    overflow-wrap: break-word;
-    word-break: break-word;
-  }
-
   /* 卡片底部信息栏 */
   .message-footer {
     position: relative;
@@ -1485,7 +1424,6 @@
     font-size: 13px;
     color: #FF698F;
     font-style: normal;
-    text-shadow: 0 0 1px transparent;
   }
 
   @keyframes fadeInUp {
@@ -1590,13 +1528,10 @@
     right: 0;
     height: calc(60vh - 90px);
     pointer-events: none;
-    /* 弹幕层：高于全站卡片内容(≤100)，但低于导航栏(1000)/控制按钮(999)/弹窗(2000+)，
-       确保弹幕压在卡片之上又永不遮挡导航与控制按钮。容器本身 fixed，
-       作为内部 .danmaku-item 绝对定位的包含块。 */
-    z-index: 998;
+    z-index: 9999;
     contain: layout style;
     user-select: none;
-    /* 用渐变遮罩实现上下软边界（现在弹幕已挂进容器，mask 才真正生效） */
+    /* 用渐变遮罩实现软边界，而不是硬裁切 */
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 5%, #000 95%, transparent 100%);
     mask-image: linear-gradient(to bottom, transparent 0%, #000 5%, #000 95%, transparent 100%);
     -webkit-mask-size: 100% 100%;
@@ -1617,28 +1552,18 @@
     cursor: pointer;
     transition: transform 0.2s ease, background-color 0.2s ease;
     will-change: transform;
-    /* 稳定 iOS 合成层：强制整层背板光栅化，避免宽 fixed 元素高速平移时
-       前导边被分块重绘（tile）裁切，根治"拦腰截断" Render Layer 撕裂 */
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-    -webkit-perspective: 1000;
-    perspective: 1000;
     /* 防止弹幕把导航栏挡住 */
     z-index: 1;
     /* 文字加一个极淡描边，在浅色背景上更清晰 */
     text-shadow: 0 0 2px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,0.6);
   }
   
-  @media (hover: hover) {
-    .danmaku-item:hover {
-      animation-play-state: paused !important;
-      transform: scale(1.08);
-      background-color: rgba(255, 255, 255, 0.95);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      z-index: 100;
-    }
+  .danmaku-item:hover {
+    animation-play-state: paused !important;
+    transform: scale(1.08);
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 100;
   }
 
   .danmaku-item.flipping {
@@ -1995,23 +1920,13 @@
 /* 礼物卡片 */
 .gift-card {
   position: relative;
-  transform: perspective(1000px) rotate(var(--tilt, 0deg)) translateZ(0);
-  transform-origin: center center;
-  will-change: transform;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  text-shadow: 0 0 1px transparent;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  transform: rotate(var(--tilt, 0deg));
   transition: all 0.3s ease;
   cursor: pointer;
 }
 
-@media (hover: hover) {
-  .gift-card:hover {
-    /* 与默认态保持 perspective + translateZ，hover 切换不重建 GPU 层 */
-    transform: perspective(1000px) rotate(0deg) translateY(-3px) translateZ(0);
-  }
+.gift-card:hover {
+  transform: rotate(0deg) translateY(-3px);
 }
 
 .gift-showcase > .gift-card:first-child { --tilt: 0deg; }
@@ -2019,7 +1934,16 @@
 
 /* ===== 4:3 横版图片卡片 ===== */
 .gift-card-image.image-horizontal {
+  height: 0;
+  padding-bottom: 75%;  /* iOS Safari <15 后备方案：4:3 比例 */
   aspect-ratio: 4 / 3;
+}
+
+@supports (aspect-ratio: 1) {
+  .gift-card-image.image-horizontal {
+    height: auto;
+    padding-bottom: 0;
+  }
 }
 
 /* ===== 视频卡片 ===== */
@@ -2030,6 +1954,10 @@
 
 .gift-card-video-glass .gift-card-image .video-play-overlay {
   position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   display: flex;
   align-items: center;
@@ -2038,10 +1966,8 @@
   transition: background 0.3s ease;
 }
 
-@media (hover: hover) {
-  .gift-card-video-glass:hover .video-play-overlay {
-    background: rgba(0,0,0,0.2);
-  }
+.gift-card-video-glass:hover .video-play-overlay {
+  background: rgba(0,0,0,0.2);
 }
 
 .gift-card-video-glass .glass-overlay .gift-card-label {
@@ -2091,11 +2017,23 @@
 }
 
 .gift-card-image.image-type {
+  height: 0;
+  padding-bottom: 133.33%;  /* iOS Safari <15 后备方案：3:4 比例 */
   aspect-ratio: 3 / 4;
 }
 
 .gift-card-image.video-type {
+  height: 0;
+  padding-bottom: 56.25%;  /* iOS Safari <15 后备方案：16:9 比例 */
   aspect-ratio: 16 / 9;
+}
+
+@supports (aspect-ratio: 1) {
+  .gift-card-image.image-type,
+  .gift-card-image.video-type {
+    height: auto;
+    padding-bottom: 0;
+  }
 }
 
 .gift-card-image img {
@@ -2105,13 +2043,11 @@
   transition: transform 0.5s ease;
 }
 
-@media (hover: hover) {
-  .gift-card:hover .gift-card-image img {
-    transform: scale(1.04);
-  }
-  .gift-card-video-glass:hover .gift-card-image img {
-    transform: none;
-  }
+.gift-card:hover .gift-card-image img {
+  transform: scale(1.04);
+}
+.gift-card-video-glass:hover .gift-card-image img {
+  transform: none;
 }
 
 /* ===== 图片毛玻璃覆盖层 ===== */
@@ -2156,6 +2092,10 @@
 /* 视频播放按钮覆盖层 */
 .video-play-overlay {
   position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   display: flex;
   align-items: center;
@@ -2165,10 +2105,8 @@
   cursor: pointer;
 }
 
-@media (hover: hover) {
-  .video-play-overlay:hover {
-    background: rgba(0,0,0,0.05);
-  }
+.video-play-overlay:hover {
+  background: rgba(0,0,0,0.05);
 }
 
 .play-circle {
@@ -2188,11 +2126,9 @@
   font-weight: 500;
 }
 
-@media (hover: hover) {
-  .video-play-overlay:hover .play-circle {
-    transform: scale(1.06);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.10);
-  }
+.video-play-overlay:hover .play-circle {
+  transform: scale(1.06);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.10);
 }
 
 /* 卡片内容区 */
@@ -2653,10 +2589,19 @@
 .fanletter-image-inner {
   width: 100%;
   max-width: 300px;
+  height: 0;
+  padding-bottom: 133.33%;  /* iOS Safari <15 后备方案：3:4 比例 */
   aspect-ratio: 3 / 4;
   border-radius: 4px;
   overflow: hidden;
   background: #fff5f8;
+}
+
+@supports (aspect-ratio: 1) {
+  .fanletter-image-inner {
+    height: auto;
+    padding-bottom: 0;
+  }
 }
 
 .fanletter-image-inner img {
@@ -3022,105 +2967,6 @@ img, video, iframe {
     grid-template-columns: 1fr;
     gap: 32px;
   }
-
-  /* 13) 留言板移动端：容器内边距更紧凑，卡片不溢出 */
-  .messages-wrapper {
-    padding: 16px 0 24px;
-    max-width: 100%;
-    /* 防横滑：旋转卡片的边角即便越界也不会撑出左右滚动条 */
-    overflow-x: hidden;
-  }
-  .messages-container {
-    /* 左右安全距离从 8px 提到 14px，配合 overflow-x:hidden 兜住旋转出血 */
-    padding: 0 14px;
-    overflow-x: hidden;
-  }
-  /* 解封手账特效：不再清零 --tilt，让 main.js 的随机角度（0.8~2.4deg）
-     在手机上继续生效。注意角度只作用于 .message-card::before 背景层，
-     .message-card-inner 文字层始终保持水平栅格（结构分离逻辑全局继承，
-     不随断点改变）→ 移动端字体同样 100% 清晰。
-     旋转出血由父容器 overflow-x:hidden + 卡片左右 margin 安全距离共同兜底。 */
-  .message-card {
-    /* 离屏安全边距：别让卡片贴着手机边框；
-       底部加大到 2rem，长留言撑高后强制拉开上下卡片，杜绝视觉粘连/重叠 */
-    margin: 12px 10px 2rem;
-  }
-  /* 关键修复：移动端 --tilt 重新启用后，与卡片等尺寸的背景层旋转会让四角
-     露出无背景的三角，长卡片尤其明显（表现为"内容溢出背景"）。
-     让 ::before 向外多覆盖 8px，旋转后四角始终有背景垫底；
-     横向外溢由父容器 .messages-container / .messages-wrapper 的 overflow-x:hidden 裁掉。 */
-  .message-card::before {
-    inset: -8px;
-  }
-  .message-card-front,
-  .message-card-back {
-    padding: 16px 18px;
-  }
-  /* 胶带：窄屏缩小；因移动端 ::before 背景外扩 8px(inset:-8px)，
-     可视粉色上沿比卡片盒上移 8px，故胶带同步上提，继续骑在"可视上沿"一半一半。
-     12px 高 + 可视上沿(-8px) → top = -8 - 6 = -14px */
-  .message-tape {
-    width: 40px;
-    height: 12px;
-    top: -14px;
-    margin: 0;
-  }
-
-  /* 14) 分页器：窄屏强制换行，避免 1~15 页码排成一行撑爆视口宽度 */
-  .pagination {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-  }
-  /* 页码真正所在的内层容器——之前只在 .pagination 上加了 wrap，
-     而所有页码都挤在这个不换行的 flex 行里，才是横向溢出的元凶 */
-  .pagination-numbers {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-  }
-  /* 适当收小尺寸：多行页码紧凑精致，不占用过多垂直空间 */
-  .pagination-btn,
-  .pagination-number {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    padding: 0;
-    font-size: 13px;
-  }
-
-  /* 15) 粉丝来信切换按钮：放大点击热区 */
-  .fanletter-switch,
-  .novel-synopsis-hint {
-    min-height: 44px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* 16) 粉丝来信节区在窄屏的统一收口 */
-  .fanletter-section {
-    padding: 8px 0 20px;
-  }
-  .fanletter-inner,
-  .fanletter-inner-flip {
-    /* 防止 grid 子项被强行撑宽超过视口 */
-    width: 100%;
-    min-width: 0;
-  }
-  .fanletter-text,
-  .fanletter-image {
-    min-width: 0;
-  }
-
-  /* 17) 控制按钮触达提升到 ≥ 44x44 */
-  .control-btn {
-    width: 48px;
-    height: 48px;
-  }
 }
 
 /* 超小屏：再收一档 */
@@ -3150,28 +2996,6 @@ img, video, iframe {
     height: auto;
     min-height: 50vh;
     max-height: none;
-  }
-
-  /* 超窄屏：再收一档，多行页码更紧凑（换行能力继承自 768 断点的 .pagination-numbers） */
-  .pagination {
-    gap: 6px;
-  }
-  .pagination-numbers {
-    gap: 6px;
-  }
-  .pagination-btn,
-  .pagination-number {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    font-size: 12px;
-  }
-
-  /* 超窄屏：粉丝来信内文进一步收字号 */
-  .fanletter-cn p,
-  .fanletter-jp p {
-    font-size: 12.5px;
-    line-height: 1.9;
   }
 }
 
@@ -3212,25 +3036,7 @@ img, video, iframe {
   }
   .danmaku-container {
     top: 65px;
-    height: calc(40vh - 65px);
-  }
-
-  /* ===== 触屏即时反馈：用 :active 替代 :hover，根治 iOS 幽灵悬浮 ===== */
-  .video-card:active,
-  .gift-card:active {
-    transform: scale(0.98);
-    transition: transform 0.1s ease;
-  }
-  .danmaku-item:active {
-    animation-play-state: paused !important;
-    transform: scale(1.06);
-    background-color: rgba(255, 255, 255, 0.95);
-  }
-  .video-play-overlay:active {
-    background: rgba(0,0,0,0.05);
-  }
-  .video-play-overlay:active .play-circle {
-    transform: scale(1.04);
+    height: calc(40vh - 65px - 50px);
   }
 }
 
