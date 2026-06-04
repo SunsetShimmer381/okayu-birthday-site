@@ -1430,12 +1430,18 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* 胶带装饰 — 手撕便签风 */
+  /* 胶带装饰 — 手撕便签风
+     定位修复：改为相对所在卡面(.message-card-front/back，其 transform 已使之成为包含块)
+     绝对定位，彻底脱离正文流（不再"绑在字上"），稳定骑在卡片上沿——上半探出、下半压住。
+     z-index 抬到 ::before 背景层(0)之上，避免被背景"吃"进卡里。 */
   .message-tape {
-    display: block;
+    position: absolute;
+    top: -7px;            /* 14px 高 → 上 7px 探出、下 7px 压住，正好一半一半 */
+    left: 50%;
+    z-index: 4;
     width: 48px;
     height: 14px;
-    margin: -26px auto 10px;
+    margin: 0;
     background: linear-gradient(
       135deg,
       rgba(255,255,255,0.7) 0%,
@@ -1443,7 +1449,10 @@
       rgba(245,235,225,0.4) 100%
     );
     border-radius: 1px;
-    transform: rotate(-5deg);
+    transform: translateX(-50%) rotate(-5deg);
+    /* 正反面各有一条胶带；背向时隐藏，避免在 preserve-3d 下镜像穿透到正面 */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
     pointer-events: none;
     box-shadow:
       0 1px 2px rgba(0,0,0,0.04),
@@ -3037,11 +3046,14 @@ img, video, iframe {
   .message-card-back {
     padding: 16px 18px;
   }
-  /* 胶带装饰在窄屏适当缩小并上提，避免在单列窄卡片上显得过大 */
+  /* 胶带：窄屏缩小；因移动端 ::before 背景外扩 8px(inset:-8px)，
+     可视粉色上沿比卡片盒上移 8px，故胶带同步上提，继续骑在"可视上沿"一半一半。
+     12px 高 + 可视上沿(-8px) → top = -8 - 6 = -14px */
   .message-tape {
     width: 40px;
     height: 12px;
-    margin-top: -22px;
+    top: -14px;
+    margin: 0;
   }
 
   /* 14) 分页器：窄屏强制换行，避免 1~15 页码排成一行撑爆视口宽度 */

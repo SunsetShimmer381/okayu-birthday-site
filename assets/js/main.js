@@ -543,10 +543,12 @@ class MessageBoardRenderer {
   constructor(data) {
     this.data = this.sanitizeData(data) || [];
     this.currentPage = 1;
-    this.itemsPerPage = window.innerWidth <= 768 ? 4 : 8;
+    this._isMobile = window.innerWidth <= 768;
+    this.itemsPerPage = this._isMobile ? 4 : 8;
     this.elements = null;
     this._prevPageHandler = null;
     this._nextPageHandler = null;
+    this._resizeHandler = null;
     
     // 卡片背景色选项（马卡龙色系）
     this.cardColors = [
@@ -598,7 +600,19 @@ class MessageBoardRenderer {
     if (this.elements.paginationNext) {
       this.elements.paginationNext.addEventListener('click', this._nextPageHandler);
     }
-    
+
+    // 监听断点切换：移动/桌面互切时同步每页条数与分页器模式
+    this._resizeHandler = () => {
+      const nowMobile = window.innerWidth <= 768;
+      if (nowMobile === this._isMobile) return;
+      this._isMobile = nowMobile;
+      this.itemsPerPage = nowMobile ? 4 : 8;
+      const totalPages = this.getTotalPages();
+      if (this.currentPage > totalPages) this.currentPage = totalPages || 1;
+      this.render();
+    };
+    window.addEventListener('resize', this._resizeHandler);
+
     this.render();
   }
 
@@ -683,15 +697,15 @@ class MessageBoardRenderer {
 
     if (item.cnText) {
       card.classList.add('flippable');
+      // 纯 CSS 翻面：卡片高度由 grid(正反面同处 1/1 单元格)自动取较高者撑开，
+      // 正反面恒等高 → 任何字数都不溢出，无需再用 JS 测量/锁定高度（旧逻辑会把
+      // 错误测高死锁在卡片上，导致背面长文脱框）。这里只保留一个防连点的软锁。
+      let flipLock = false;
       card.addEventListener('click', () => {
-        if (inner.classList.contains('flipping')) return;
-        inner.classList.add('flipping');
-        this.matchCardHeight(card, inner, !inner.classList.contains('flipped'));
-        setTimeout(() => {
-          inner.classList.toggle('flipped');
-          this.releaseCardHeight(card, inner);
-          inner.classList.remove('flipping');
-        }, 50);
+        if (flipLock) return;
+        flipLock = true;
+        inner.classList.toggle('flipped');
+        setTimeout(() => { flipLock = false; }, 600); // 与 rotateY 0.6s 过渡同步
       });
     }
 
@@ -706,29 +720,6 @@ class MessageBoardRenderer {
     });
 
     return card;
-  }
-
-  matchCardHeight(card, inner, toBack) {
-    const targetFace = toBack
-      ? inner.querySelector('.message-card-back')
-      : inner.querySelector('.message-card-front');
-    const temp = targetFace.cloneNode(true);
-    temp.style.position = 'absolute';
-    temp.style.visibility = 'hidden';
-    temp.style.width = card.clientWidth + 'px';
-    temp.style.backfaceVisibility = 'visible';
-    temp.style.transform = 'none';
-    document.body.appendChild(temp);
-    const height = temp.offsetHeight;
-    document.body.removeChild(temp);
-    card.style.transition = 'height 0.3s ease';
-    card.style.height = height + 'px';
-  }
-
-  releaseCardHeight(card, inner) {
-    setTimeout(() => {
-      card.style.transition = '';
-    }, 350);
   }
 
   createCardFace(item, face) {
@@ -789,6 +780,12 @@ class MessageBoardRenderer {
       this.elements.paginationNext.disabled = this.currentPage === totalPages;
     }
 
+    // 移动端：极简模式（首页 · 当前页 · 末页，其余以 … 省略），避免窄屏页码挤爆
+    if (this._isMobile) {
+      this.renderMobilePagination(totalPages);
+      return;
+    }
+
     // 生成页码按钮（最多显示7个）
     let startPage = Math.max(1, this.currentPage - 3);
     let endPage = Math.min(totalPages, this.currentPage + 3);
@@ -819,6 +816,21 @@ class MessageBoardRenderer {
       }
       this.addPageNumber(totalPages);
     }
+  }
+
+  renderMobilePagination(totalPages) {
+    // 仅显示首页、当前页、末页三个关键页码，相邻空档用 … 省略。
+    // 配合左右 ‹ › 按钮，窄屏也能逐页翻动且不撑爆宽度。
+    const keyPages = [...new Set([1, this.currentPage, totalPages])]
+      .filter(p => p >= 1 && p <= totalPages)
+      .sort((a, b) => a - b);
+
+    let prev = 0;
+    keyPages.forEach(page => {
+      if (page - prev > 1) this.addDots();
+      this.addPageNumber(page);
+      prev = page;
+    });
   }
 
   addPageNumber(page) {
@@ -863,6 +875,10 @@ class MessageBoardRenderer {
     }
     if (this.elements.paginationNext && this._nextPageHandler) {
       this.elements.paginationNext.removeEventListener('click', this._nextPageHandler);
+    }
+    if (this._resizeHandler) {
+      window.removeEventListener('resize', this._resizeHandler);
+      this._resizeHandler = null;
     }
     this.elements = null;
     this._prevPageHandler = null;
@@ -1336,6 +1352,16 @@ class ScrollHintController {
     this.update();
   }
 
+  // 兼容兜底：html/body 设了 overflow-x:hidden 后，overflow-y 计算值变 auto，
+  // 移动端(尤其 iOS Safari)会让 <body> 成为真正的滚动容器，此时 window.scrollY 恒为 0。
+  // 用 pageYOffset → documentElement → body 依次兜底，保证 PC / 移动端取值一致。
+  getScrollTop() {
+    return window.pageYOffset
+      || document.documentElement.scrollTop
+      || document.body.scrollTop
+      || 0;
+  }
+
   setupEventListeners() {
     this._pendingUpdate = false;
     this._scrollHandler = () => {
@@ -1346,11 +1372,12 @@ class ScrollHintController {
         this.update();
       });
     };
-    window.addEventListener('scroll', this._scrollHandler, { passive: true });
+    // capture:true → 即便滚动发生在 body(而非 window)上，捕获阶段也能在 window 接住事件
+    window.addEventListener('scroll', this._scrollHandler, { passive: true, capture: true });
   }
 
   update() {
-    const shouldShow = window.scrollY <= this.threshold;
+    const shouldShow = this.getScrollTop() <= this.threshold;
 
     if (shouldShow && !this.isShown) {
       this.hint.classList.remove('hidden');
@@ -1362,7 +1389,7 @@ class ScrollHintController {
   }
 
   destroy() {
-    window.removeEventListener('scroll', this._scrollHandler);
+    window.removeEventListener('scroll', this._scrollHandler, { capture: true });
     this.hint = null;
     this._scrollHandler = null;
   }
