@@ -1320,6 +1320,11 @@
   .message-card {
     /* 卡片本体：仅作定位与动画容器，绝对不参与任何 rotate */
     position: relative;
+    /* iOS Safari 3D 结界：在翻转容器(.message-card-inner)的父级建立透视上下文，
+       这是 -webkit-backface-visibility 能稳定生效的前提。1000px 透视既保证翻面立体感，
+       又不至于在小角度下产生明显畸变。 */
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
     border-radius: 4px;
     padding: 0;
     /* 上浮的位移过渡（hover 时用），不含 rotate 所以无亚像素风险 */
@@ -1379,12 +1384,17 @@
     z-index: 1;
     display: grid;
     width: 100%;
+    height: 100%;
+    box-sizing: border-box;
     transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-transition: -webkit-transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
   }
 
   .message-card-inner.flipped {
     transform: rotateY(180deg);
+    -webkit-transform: rotateY(180deg);
   }
 
   .message-card-front,
@@ -1395,16 +1405,22 @@
     padding: 20px 22px;
   }
 
-  /* 正面文字：静态下无 rotate，保留基本平滑即可 */
+  /* 正面文字：静态下无 rotate，保留基本平滑即可。
+     translateZ(1px)：强制 Safari 把该面提升为独立合成层，
+     避免正反面共层时 backface-visibility 被忽略而双面同显。 */
   .message-card-front {
+    transform: translateZ(1px);
+    -webkit-transform: translateZ(1px);
     font-family: var(--font-display);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* 背面：仅翻面瞬间临时 rotateY，对清晰度无长期影响 */
+  /* 背面：rotateY 翻面 + translateZ 硬件分层（两者必须写在同一个 transform 里，
+     否则后者会覆盖前者导致背面不翻转）。 */
   .message-card-back {
-    transform: rotateY(180deg);
+    transform: rotateY(180deg) translateZ(1px);
+    -webkit-transform: rotateY(180deg) translateZ(1px);
     font-family: var(--font-display);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -1442,6 +1458,9 @@
     text-shadow: 0 0 1px transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* 超长不换行字符串(长 URL / 连续英文)兜底断行，防止撑宽卡片导致文字越出背景框 */
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   /* 卡片底部信息栏 */
@@ -2985,17 +3004,39 @@ img, video, iframe {
   .messages-wrapper {
     padding: 16px 0 24px;
     max-width: 100%;
+    /* 防横滑：旋转卡片的边角即便越界也不会撑出左右滚动条 */
+    overflow-x: hidden;
   }
   .messages-container {
-    padding: 0 8px;
+    /* 左右安全距离从 8px 提到 14px，配合 overflow-x:hidden 兜住旋转出血 */
+    padding: 0 14px;
+    overflow-x: hidden;
   }
+  /* 解封手账特效：不再清零 --tilt，让 main.js 的随机角度（0.8~2.4deg）
+     在手机上继续生效。注意角度只作用于 .message-card::before 背景层，
+     .message-card-inner 文字层始终保持水平栅格（结构分离逻辑全局继承，
+     不随断点改变）→ 移动端字体同样 100% 清晰。
+     旋转出血由父容器 overflow-x:hidden + 卡片左右 margin 安全距离共同兜底。 */
   .message-card {
-    /* 移动端单列时取消随机倾斜，避免卡片边缘出血到视口外 */
-    --tilt: 0deg;
+    /* 离屏安全边距：别让卡片贴着手机边框 */
+    margin: 12px 10px;
+  }
+  /* 关键修复：移动端 --tilt 重新启用后，与卡片等尺寸的背景层旋转会让四角
+     露出无背景的三角，长卡片尤其明显（表现为"内容溢出背景"）。
+     让 ::before 向外多覆盖 8px，旋转后四角始终有背景垫底；
+     横向外溢由父容器 .messages-container / .messages-wrapper 的 overflow-x:hidden 裁掉。 */
+  .message-card::before {
+    inset: -8px;
   }
   .message-card-front,
   .message-card-back {
     padding: 16px 18px;
+  }
+  /* 胶带装饰在窄屏适当缩小并上提，避免在单列窄卡片上显得过大 */
+  .message-tape {
+    width: 40px;
+    height: 12px;
+    margin-top: -22px;
   }
 
   /* 14) 分页按钮：触达 ≥ 44x44（WCAG/iOS HIG 推荐） */
