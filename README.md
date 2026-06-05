@@ -55,7 +55,7 @@
 ### 留言卡片
 
 - `danmaku-data.js` 数据驱动，JS 动态创建 DOM
-- **分页**：每页 6 张卡片，底部页码导航
+- **分页**：桌面端每页 8 张、移动端每页 4 张卡片，底部页码导航（窄屏自动切换为极简页码模式）
 - **中日双语翻转**：点击卡片翻转切换中文/日文，高度自适应内容长度
 - `matchCardHeight()` 通过克隆节点测量目标面高度，实现平滑过渡
 
@@ -132,7 +132,7 @@ sssdsd/
 | `DanmakuAutoPlayer` | 定时循环发射弹幕，长度筛选 |
 | `DanmakuManager` | 弹幕 DOM 创建、布局、动画 |
 | `DanmakuModeController` | 弹幕开关与屏占比切换 |
-| `MessageCardController` | 留言卡片分页、中日翻转、高度适配 |
+| `MessageBoardRenderer` | 留言卡片分页、中日翻转、高度适配（`matchCardHeight` 克隆测高） |
 | `VideoModalController` | 视频弹窗打开/关闭，BGM 静音联动 |
 | `GiftModalController` | 礼物卡片弹窗（图片/视频） |
 | `TimelineImageViewer` | 时间线图片全屏查看 |
@@ -163,6 +163,58 @@ sssdsd/
 - `backdrop-filter` 同步提供 `-webkit-backdrop-filter` 前缀（Safari 兼容）
 - `env(safe-area-inset-bottom)` 带 `0px` 降级值（旧浏览器兼容）
 - 渐变底色作为毛玻璃效果的降级方案
+
+---
+
+## 架构与层级规约（Z-index）
+
+> 本表是**全局层叠基线档案**。改动 UI 前请先对照；新增元素一律按"语义层段"取值，**不要随手写 `9999`**。
+
+### 全局固定层 / 覆盖层（决定"谁挡谁"的权威阶梯）
+
+| 层级 | 元素 | 选择器 | 职责 |
+|:---:|------|--------|------|
+| **3000** | 图片大图灯箱 | `.timeline-image-overlay` | 最高，盖住一切 |
+| **2000** | 视频弹窗 / 礼物弹窗 | `.video-modal-overlay`, `.gift-modal-overlay` | 模态层 |
+| **1000** | 顶部导航 / 移动底栏导航 | `.nav`, `.mobile-nav` | 顶层 UI，**永不可被遮挡** |
+| **999** | 悬浮控制按钮（音乐/弹幕） | `.control-buttons` | 顶层 UI |
+| **100** | 滚动提示箭头 | `.scroll-hint` | 引导提示 |
+| **10** | 🌸 樱花飘落 | `.sakura` | 前景装饰（在弹幕之上） |
+| **9** | 💬 弹幕舞台 | `.danmaku-container` | 弹幕容器（下沉以让出景深） |
+| **0 / auto** | 页面正文内容 | `.page` / 各卡片 | 普通内容，随页面滚动 |
+
+### 组件内部层级（被父级"封"在局部，不参与全局竞争）
+
+| 层级 | 元素 | 选择器 | 所属局部上下文 |
+|:---:|------|--------|----------------|
+| 100 | 时间线悬浮提示框 | `.timeline-tooltip` | `.timeline-item` 内 |
+| 100 | 弹幕 hover 态 | `.danmaku-item:hover` | **被 `.danmaku-container` 封顶在 z9** |
+| 10 | 弹窗关闭按钮 | `.video-modal-close`, `.gift-modal-close` | 各自 modal 内 |
+| 5 | 礼物卡片胶带 | `.gift-tape` | `.gift-card` 内 |
+| 2 | 拍立得胶带 / 按钮角标 | `.portrait-tape`, `.btn-badge` | 各自卡片/按钮内 |
+| 1 | 卡片正文/页脚、弹幕条目、毛玻璃文字 | `.message-content`, `.danmaku-item` 等 | 各自卡片/舞台内 |
+| -1 | 名字高亮下划线 | `.name-highlight::after` | 标题内，沉到文字背后 |
+
+### 🔒 防穿透机制（务必先读）
+
+`.danmaku-container` 上有 **`isolation: isolate` + `position: fixed`**，二者各自都会建立独立堆叠上下文。这意味着：
+
+> **弹幕内部的所有 z-index（条目 `1`、hover `100`）和 `translateZ` 合成层，统统被"关"在舞台的 `z-index: 9` 里，无论数值多大都不可能冒到 9 之上。**
+
+所以表里弹幕的 hover `100` **不等于**全局 100——它只在舞台内部排序。这正是 iOS 上 `translateZ` 不再穿透挡住导航栏的根本原因。
+
+### 📐 新增 UI 时的取值规约
+
+| 你要加的东西 | 取这一段 |
+|------|----------|
+| 全屏灯箱 / 图片查看器 | `3000` |
+| 模态弹窗（对话框/播放器） | `2000` |
+| 常驻导航、悬浮操作按钮 | `999 ~ 1000`（**天花板，别超过**） |
+| 引导/提示类常驻浮层 | `100` |
+| 背景氛围装饰（粒子/花瓣/弹幕） | `1 ~ 10` |
+| 卡片/组件内部的小层叠 | 给**组件根节点**加 `isolation: isolate`，内部随便用 `1~100`，**永不外泄** |
+
+**黄金法则：** 想做"绝对不挡别人、也不被别人挤"的局部层叠 → 给组件根节点加一行 `isolation: isolate`，内部 z-index 自成体系。这就是弹幕舞台的同款解法。
 
 ---
 

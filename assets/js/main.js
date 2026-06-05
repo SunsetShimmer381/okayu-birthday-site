@@ -451,17 +451,18 @@ class DanmakuManager {
     el.dataset.name = escapedName;
     el.dataset.duration = durationSec;
 
-    // 弹幕 position:fixed 挂到 body，不受容器高度限制
-    // topPct 相对于视口高度（容器 top + topPct% 容器高度）
-    const containerTop = this.container.getBoundingClientRect().top;
+    // 弹幕挂回 #danmakuContainer 内部，position:absolute 相对容器定位。
+    // 容器是「受控舞台层」（z-index 低于顶层 UI + isolation 隔离 + mask 软边缘 + overflow 兜底），
+    // 因此弹幕的 translateZ/backface 合成层被封死在舞台内：既能抗 iOS 横向撕裂，
+    // 又绝不会穿透挡住导航栏/控制按钮。top 直接相对容器高度计算即可，
+    // 不再叠加容器在视口中的偏移（避免滚动时频繁读 getBoundingClientRect 抖动）。
     const containerHeight = this.container.offsetHeight;
-    const absoluteTop = containerTop + (containerHeight * topPct / 100);
-    el.style.top = `${absoluteTop}px`;
-    el.style.position = 'fixed';
+    el.style.top = `${containerHeight * topPct / 100}px`;
+    el.style.position = 'absolute';
     el.style.animationDuration = `${durationSec}s`;
 
     this.danmakus.add(el);
-    document.body.appendChild(el);
+    this.container.appendChild(el);
 
     if (escapedCnText) {
       el.addEventListener('click', (e) => {
@@ -743,6 +744,12 @@ class MessageBoardRenderer {
 
   releaseCardHeight(card, inner) {
     setTimeout(() => {
+      // 致命补丁：释放写死的内联高度，回归 grid 自动等高。
+      // grid 单元格(正反面同处 1/1)天然取较高者撑开，永不溢出；
+      // 释放后卡片能自适应字体晚加载/窗口缩放导致的文本回流，
+      // 修复「翻面后高度被永久锁死、长文脱框」的致命缺陷。
+      // 此刻 rotateY 已转过 ~105deg（接近背面），高度回弹被旋转动作掩盖，几乎不可见。
+      card.style.height = '';
       card.style.transition = '';
     }, 350);
   }

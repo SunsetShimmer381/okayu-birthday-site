@@ -1528,10 +1528,18 @@
     right: 0;
     height: calc(60vh - 90px);
     pointer-events: none;
-    z-index: 9999;
+    /* 关键①：层级压在顶层 UI（nav 1000 / 控制按钮 999）之下，且下沉到樱花(z10)之下，
+       把前景让给飘落的樱花营造景深；再配合 isolation 建立独立堆叠上下文 ——
+       内部弹幕无论怎么做 GPU 合成层提升，堆叠都被封死在本舞台内，不可能冒上去挡 UI */
+    z-index: 9;
+    isolation: isolate;
+    /* 关键③：硬兜底裁掉飞出舞台的合成层，防 iOS「transform 子元素逃逸 overflow」过度绘制 */
+    overflow: hidden;
     contain: layout style;
     user-select: none;
-    /* 用渐变遮罩实现软边界，而不是硬裁切 */
+    /* 关键②：mask 只挂在「静止」的舞台层本身，绝不在它上面叠加 transform；
+       GPU 合成层全部下放给内部 .danmaku-item —— 变换层与 mask 层分属父子、互不重叠，
+       以此规避 iOS Safari「position:fixed + mask + 其上变换层」的经典闪烁/撕裂(风险点 E) */
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 5%, #000 95%, transparent 100%);
     mask-image: linear-gradient(to bottom, transparent 0%, #000 5%, #000 95%, transparent 100%);
     -webkit-mask-size: 100% 100%;
@@ -1552,7 +1560,14 @@
     cursor: pointer;
     transition: transform 0.2s ease, background-color 0.2s ease;
     will-change: transform;
-    /* 防止弹幕把导航栏挡住 */
+    /* iOS 抗撕裂：稳定独立合成层 + 关闭背面渲染，消除横向滚动时的撕裂/重绘。
+       因弹幕已收纳进受控舞台层（z60 + isolation），此处的合成层提升被封死在舞台内，
+       绝不会穿透挡住顶层 UI —— 这正是「既要 GPU 加速、又不破坏层级」的破局点 */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    /* 防止弹幕把导航栏挡住（双保险，主防线是上面的舞台层 isolation） */
     z-index: 1;
     /* 文字加一个极淡描边，在浅色背景上更清晰 */
     text-shadow: 0 0 2px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,0.6);
