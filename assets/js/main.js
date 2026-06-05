@@ -713,9 +713,10 @@ class MessageBoardRenderer {
     }
 
     card.addEventListener('mouseenter', () => {
-      if (!inner.classList.contains('flipped')) {
-        card.classList.add('message-card-hover');
-      }
+      // 悬浮跟随效果作用在外层 .message-card 上，与内层 .message-card-inner 的
+      // 3D rotateY 翻转互不影响，因此正反两面都应生效。
+      // （旧代码这里有 if (!flipped) 守卫，导致翻到背面后 hover 永久失效。）
+      card.classList.add('message-card-hover');
     });
 
     card.addEventListener('mouseleave', () => {
