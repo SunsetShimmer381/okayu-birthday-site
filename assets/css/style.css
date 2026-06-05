@@ -824,6 +824,18 @@
     border-bottom-color: #e91e8c;
   }
 
+  .timeline-external-link {
+    color: #d4708a;
+    cursor: pointer;
+    border-bottom: 1px dashed #d4708a;
+    transition: all 0.2s;
+  }
+
+  .timeline-external-link:hover {
+    color: #e91e8c;
+    border-bottom-color: #e91e8c;
+  }
+
   /* 时间线悬浮提示框 */
   .timeline-tooltip {
     position: absolute;
@@ -1123,6 +1135,22 @@
     font-size: 11px;
     color: #fff;
     font-family: var(--font-display);
+  }
+
+  .video-view-count {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    padding: 3px 8px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 12px;
+    font-size: 11px;
+    color: #fff;
+    font-family: var(--font-display);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    z-index: 10;
   }
 
   .video-info {
@@ -2145,25 +2173,26 @@
 }
 
 .play-circle {
-  width: 46px;
-  height: 46px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.9);
+  background: rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
-  color: #d4708a;
-  letter-spacing: 1px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  font-size: 24px;
+  color: #fff;
   transition: all 0.3s ease;
-  font-family: var(--font-display);
-  font-weight: 500;
+}
+
+.play-circle::before {
+  content: '\25B6';
+  margin-left: 4px;
 }
 
 .video-play-overlay:hover .play-circle {
-  transform: scale(1.06);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+  transform: scale(1.1);
+  background: rgba(0,0,0,0.7);
 }
 
 /* 卡片内容区 */
@@ -2975,11 +3004,10 @@ img, video, iframe {
     --tilt: 0deg !important;
   }
   .gift-more-hidden {
-    display: none;
+    display: block;
   }
   .gift-load-more {
-    display: block;
-    margin: 16px auto 12px;
+    display: none;
     padding: 10px 28px;
     background: #fff;
     border: 1px solid rgba(212, 112, 138, 0.2);

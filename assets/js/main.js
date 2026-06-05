@@ -96,8 +96,33 @@ class CountdownController {
 
   update() {
     const now = new Date();
+    
+    // 生日当天（6月8日）的特殊处理
+    const isBirthday = now.getMonth() === this.targetMonth && now.getDate() === this.targetDay;
+    
+    if (isBirthday) {
+      // 生日当天显示"00:00:00"和"生日快乐"
+      this.elements.days.textContent = '00';
+      this.elements.hours.textContent = '00';
+      this.elements.mins.textContent = '00';
+      this.elements.secs.textContent = '00';
+      this.elements.caption.innerHTML = '<span class="date">生日快乐！</span>';
+      return;  // 提前返回，不计算倒计时
+    }
+
     const targetDate = this.getNextTargetDate();
     const diff = targetDate - now;
+
+    // 防护：diff为负数时重置为0
+    if (diff < 0) {
+      console.warn('CountdownController: diff为负数，已重置');
+      this.elements.days.textContent = '00';
+      this.elements.hours.textContent = '00';
+      this.elements.mins.textContent = '00';
+      this.elements.secs.textContent = '00';
+      this.elements.caption.innerHTML = `距离<span class="date">${this.targetLabel}</span>还有`;
+      return;
+    }
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -108,14 +133,7 @@ class CountdownController {
     this.elements.hours.textContent = String(hours).padStart(2, '0');
     this.elements.mins.textContent = String(mins).padStart(2, '0');
     this.elements.secs.textContent = String(secs).padStart(2, '0');
-
-    const isBirthday = now.getMonth() === this.targetMonth && now.getDate() === this.targetDay;
-
-    if (isBirthday) {
-      this.elements.caption.innerHTML = '<span class="date">生日快乐！</span>';
-    } else {
-      this.elements.caption.innerHTML = `距离<span class="date">${this.targetLabel}</span>还有`;
-    }
+    this.elements.caption.innerHTML = `距离<span class="date">${this.targetLabel}</span>还有`;
   }
 
   start() {
@@ -2012,6 +2030,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         url: link.dataset.url || '',
         desc: link.textContent || ''
       });
+    });
+  });
+
+  // Page3 时间线中外链链接（如动态帖子等）
+  document.querySelectorAll('.timeline-external-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const url = link.dataset.url;
+      const target = link.dataset.target || '_blank';
+      if (url) {
+        window.open(url, target);
+      }
     });
   });
 });

@@ -1,255 +1,285 @@
-## 1. 高层摘要（TL;DR）
+## 📋 高级摘要（TL;DR）
 
-*   **影响范围**：🟡 **中等** - 重构全局字体系统并新增内容板块
-*   **核心变更**：
-    *   🎨 将 **Noto Sans JP** 替换为 **Klee One** 作为中日文回退字体
-    *   📝 引入 CSS 变量统一管理字体声明
-    *   📬 新增第二个粉丝来信板块（图左文右布局）
-    *   📅 添加新的时间线事件（2026.05.31）
-    *   ✨ 优化文本渲染质量和响应式布局
+- **影响范围**：中等 - 主要是UI样式优化、倒计时逻辑修复和内容更新
+- **核心变更**：
+  - ✨ 新增"猫的切片"视频展示区域
+  - 🎂 优化生日倒计时逻辑，修复负数时间显示问题
+  - 🎨 重构播放按钮样式（从文字"PLAY"改为三角形图标）
+  - 📝 更新时间线内容，新增4w粉里程碑
+  - 🔗 新增时间线外链点击功能
 
 ---
 
-## 2. 可视化概览（代码与逻辑映射）
+## 🗺️ 视觉概览（代码与逻辑图）
 
 ```mermaid
 graph TD
-    subgraph "字体系统重构"
-        A["CSS 变量定义<br/>--font-display"] --> B["全局字体替换"]
-        B --> C["body 元素"]
-        B --> D["消息卡片"]
-        B --> E["小说简介"]
-        B --> F["粉丝来信"]
-        B --> G["移动端导航"]
+    subgraph "index.html - 页面结构"
+        A[时间线区域] --> B[新增4w粉里程碑]
+        B --> C[外链点击事件]
+        D[新增视频切片区域] --> E[视频卡片组件]
+        F[礼物区域] --> G[视频卡片重新排序]
     end
     
-    subgraph "内容扩展"
-        H["index.html"] --> I["新增时间线事件<br/>2026.05.31"]
-        H --> J["第二个粉丝来信板块<br/>fanletter-inner-flip"]
+    subgraph "assets/js/main.js - 交互逻辑"
+        H[CountdownController.update] --> I{是否为生日当天?}
+        I -->|是| J[显示 00:00:00 + 生日快乐]
+        I -->|否| K[计算倒计时]
+        K --> L{diff < 0?}
+        L -->|是| M[重置为 00:00:00]
+        L -->|否| N[正常显示倒计时]
+        O[外链点击监听器] --> P[window.open]
     end
     
-    subgraph "交互逻辑"
-        K["main.js"] --> L["fanletterText2<br/>切换逻辑"]
-        L --> M["syncFanletterHeight2<br/>高度同步"]
-        L --> N["中日文切换动画"]
+    subgraph "assets/css/style.css - 样式系统"
+        Q[.play-circle] --> R[黑色半透明背景 + 三角形图标]
+        S[.video-view-count] --> T[播放量显示组件]
+        U[.timeline-external-link] --> V[外链样式]
+        W[.gift-more-hidden] --> X[display: block]
     end
     
-    style A fill:#bbdefb,color:#0d47a1
-    style H fill:#fff3e0,color:#e65100
-    style K fill:#c8e6c9,color:#1a5e20
+    C -.-> O
+    E -.-> S
+    E -.-> Q
 ```
 
 ---
 
-## 3. 详细变更分析
+## 🔍 详细变更分析
 
-### 🎨 组件一：字体系统重构
+### 🎨 **样式层（assets/css/style.css）**
 
-#### **变更说明**
-将项目中所有硬编码的字体声明统一迁移到 CSS 变量 `--font-display`，并替换字体资源。
+#### 新增样式组件
 
-#### **字体资源变更表**
+| 样式类名 | 用途 | 关键属性 |
+|---------|------|---------|
+| `.timeline-external-link` | 时间线外链样式 | 粉色虚线下划线，hover效果 |
+| `.video-view-count` | 视频播放量显示 | 左下角黑色半透明背景，圆角 |
 
-| 字体名称 | 原用途 | 新用途 | 来源 |
-|---------|--------|--------|------|
-| **LXGW WenKai** | 中文正文（优先） | 中日正文（优先） | jsDelivr CDN |
-| **Klee One** | - | 中日正文（回退） | Google Fonts |
-| ~~Noto Sans JP~~ | 日文正文（回退） | 已移除 | Google Fonts |
-
-#### **关键代码变更**（来源：`assets/css/style.css`）
+#### 播放按钮重构
 
 ```css
-/* 字体导入替换 */
--@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap');
-+@import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
-
-/* CSS 变量定义 */
-:root {
-+  --font-display: 'LXGW WenKai', 'Klee One', serif;
-  --accent: #d4708a;
-  /* ... */
+/* 旧样式：白色背景 + "PLAY" 文字 */
+.play-circle {
+  width: 46px;
+  height: 46px;
+  background: rgba(255,255,255,0.9);
+  font-size: 11px;
+  color: #d4708a;
+  content: "PLAY";  /* 文字内容 */
 }
 
-/* 全局应用 */
-body {
--  font-family: 'LXGW WenKai', 'Noto Sans JP', sans-serif;
-+  font-family: var(--font-display);
+/* 新样式：黑色半透明背景 + 三角形图标 */
+.play-circle {
+  width: 56px;
+  height: 56px;
+  background: rgba(0,0,0,0.5);
+  font-size: 24px;
+  color: #fff;
+}
+.play-circle::before {
+  content: '\25B6';  /* Unicode 播放符号 ▶ */
+  margin-left: 4px;
 }
 ```
 
-#### **文本渲染优化**
-新增以下属性提升字体显示质量：
-```css
-.message-card {
-  /* 移除 perspective，避免影响文本渲染 */
-  perspective: none;
-  /* 优化文本渲染质量 */
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+#### 礼物显示逻辑调整
 
-.message-card-front {
-  /* 使用 3D 加速提升渲染质量 */
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-```
+| 样式类 | 旧值 | 新值 | 说明 |
+|--------|------|------|------|
+| `.gift-more-hidden` | `display: none` | `display: block` | 隐藏内容改为默认显示 |
+| `.gift-load-more` | `display: block` | `display: none` | 加载按钮改为隐藏 |
 
 ---
 
-### 📬 组件二：粉丝来信扩展
+### ⚙️ **逻辑层（assets/js/main.js）**
 
-#### **变更说明**
-新增第二个粉丝来信板块，采用图左文右的镜像布局（`fanletter-inner-flip`），并实现独立的中日文切换功能。
+#### 倒计时控制器重构
 
-#### **布局对比表**
+**变更前逻辑：**
+```javascript
+update() {
+  const now = new Date();
+  const targetDate = this.getNextTargetDate();
+  const diff = targetDate - now;
+  // 计算时间...
+  // 然后检查是否为生日
+  const isBirthday = now.getMonth() === this.targetMonth && now.getDate() === this.targetDay;
+  if (isBirthday) {
+    this.elements.caption.innerHTML = '<span class="date">生日快乐！</span>';
+  }
+}
+```
 
-| 属性 | 原布局（来信1） | 新布局（来信2） |
-|------|----------------|----------------|
-| **Grid 列宽** | `1fr 1fr` | `300px 1fr` |
-| **最大宽度** | `900px` | `960px` |
-| **图片位置** | 右侧 | 左侧 |
-| **类名** | `fanletter-inner` | `fanletter-inner-flip` |
+**变更后逻辑：**
+```javascript
+update() {
+  const now = new Date();
+  
+  // 1. 优先检查生日
+  const isBirthday = now.getMonth() === this.targetMonth && now.getDate() === this.targetDay;
+  if (isBirthday) {
+    this.elements.days.textContent = '00';
+    this.elements.hours.textContent = '00';
+    this.elements.mins.textContent = '00';
+    this.elements.secs.textContent = '00';
+    this.elements.caption.innerHTML = '<span class="date">生日快乐！</span>';
+    return;  // 提前返回
+  }
 
-#### **新增 JavaScript 逻辑**（来源：`assets/js/main.js`）
+  // 2. 计算倒计时
+  const targetDate = this.getNextTargetDate();
+  const diff = targetDate - now;
+
+  // 3. 防护：diff为负数时重置
+  if (diff < 0) {
+    console.warn('CountdownController: diff为负数，已重置');
+    this.elements.days.textContent = '00';
+    this.elements.hours.textContent = '00';
+    this.elements.mins.textContent = '00';
+    this.elements.secs.textContent = '00';
+    this.elements.caption.innerHTML = `距离<span class="date">${this.targetLabel}</span>还有`;
+    return;
+  }
+
+  // 4. 正常计算和显示
+  // ...
+}
+```
+
+**改进点：**
+- ✅ 生日检测提前，避免不必要的计算
+- ✅ 添加负数diff防护，防止显示负数时间
+- ✅ 生日当天强制显示"00:00:00"
+
+#### 新增外链点击监听器
 
 ```javascript
-// 第二个粉丝来信切换逻辑
-const fanletterText2 = document.getElementById('fanletterText2');
-const fanletterSwitch2 = document.getElementById('fanletterSwitch2');
-// ... 初始化状态
-
-const syncFanletterHeight2 = () => {
-  const activeEl = isFanletterJp2 ? fanletterJP2 : fanletterCN2;
-  // 动态同步高度
-  fanletterContent2.style.height = activeEl.scrollHeight + 'px';
-};
-
-fanletterSwitch2.addEventListener('click', () => {
-  // 650ms 切换动画
-  isFanletterJp2 = !isFanletterJp2;
-  fanletterSwitch2.textContent = isFanletterJp2 ? '点击切换中文 ▸' : '日本語で読む ▸';
+// Page3 时间线中外链链接（如动态帖子等）
+document.querySelectorAll('.timeline-external-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = link.dataset.url;
+    const target = link.dataset.target || '_blank';
+    if (url) {
+      window.open(url, target);
+    }
+  });
 });
 ```
 
-#### **HTML 结构**（来源：`index.html`）
+---
+
+### 📄 **内容层（index.html）**
+
+#### 时间线内容更新
+
+| 日期 | 旧标题 | 新标题 | 变更说明 |
+|------|--------|--------|----------|
+| 2026.05.31 | "首次超晚学汉语直播回" | "深夜学汉语直播回" | 标题简化 |
+| - | - | 2026.6.5 "4w粉啦！" | **新增里程碑** |
+
+**新增4w粉里程碑：**
 ```html
-<!-- 新增第二个粉丝来信板块 -->
-<div class="fanletter-section">
-  <div class="fanletter-inner fanletter-inner-flip">
-    <div class="fanletter-image">
-      <img src="./assets/images/gift_chou.webp" alt="チョウの手描きイラスト">
+<div class="timeline-item">
+  <p class="timeline-date">2026.6.5</p>
+  <p class="timeline-title">4w粉啦！</p>
+  <p class="timeline-desc">
+    在下午1:51的时刻，猫羽おかゆ4w粉成就达成！
+    <span class="timeline-external-link" 
+          data-url="https://www.bilibili.com/opus/1210436665851510787" 
+          data-target="_blank">(இωஇ`｡)</span>
+  </p>
+</div>
+```
+
+#### 新增"猫的切片"视频区域
+
+```html
+<div class="video-section">
+  <div class="section-header">
+    <h3 class="section-title">猫的切片 · Highlights</h3>
+    <p class="section-desc">精彩直播片段回顾</p>
+  </div>
+  <div class="video-grid">
+    <!-- 视频卡片1：带播放量显示 -->
+    <div class="video-card" data-title="日本萝莉猫猫直播中习惯性摆出雷霆宅女坐姿" 
+         data-url="https://www.bilibili.com/video/BV1seEw6YEmL" 
+         data-bvid="BV1seEw6YEmL">
+      <div class="video-thumbnail">
+        <div class="video-view-count">10.7万</div>  <!-- 新增播放量 -->
+        <img src="./assets/images/highlight_1.webp" alt="视频封面">
+        <div class="video-duration">00:42</div>
+      </div>
+      <!-- ... -->
     </div>
-    <div class="fanletter-text is-jp" id="fanletterText2">
-      <!-- 中日文内容 -->
-    </div>
+    <!-- 视频卡片2、3占位 -->
   </div>
 </div>
 ```
 
----
+#### 礼物区域视频卡片重新排序
 
-### 📅 组件三：时间线与标题更新
+| 位置 | 旧内容 | 新内容 |
+|------|--------|--------|
+| 列1-下 | 【猫羽おかゆ】自制MV《快乐星猫》 | 【预留视频】（空白の音符） |
+| 列3-下 | 【预留】 | 【猫羽おかゆ】自制MV《快乐星猫》（かくさん潇潇落叶） |
 
-#### **变更说明**
-添加新的时间线事件，并简化页面标题。
-
-#### **时间线新增事件**
-
-| 日期 | 标题 | 描述 |
-|------|------|------|
-| **2026.05.31** | 首次超晚学汉语直播回 | 这天真的好兴奋，又学中文又弹吉他，直到第二天凌晨一点（日本时间）才不舍的下播 |
-
-#### **标题变更**
-```html
-<!-- 旧标题 -->
--<title>猫羽おかゆ お誕生日</title>
-
-<!-- 新标题 -->
-+<title>猫羽おかゆ</title>
-```
+#### 移除内容
+- 删除底部的"bilibili介绍朋友"直达链接区域
 
 ---
 
-### 📱 组件四：响应式与样式优化
+### 📊 **数据层（assets/js/danmaku-data.js）**
 
-#### **小说简介样式拆分**
-```css
-/* 原样式 */
-.novel-synopsis p { ... }
+弹幕顺序调整：
 
-/* 拆分为中日文独立样式 */
-+.novel-synopsis-cn p { font-family: var(--font-display); }
-+.novel-synopsis-jp p { font-family: var(--font-display); }
-```
-
-#### **粉丝来信样式优化**
-```css
-/* 新增 overflow 防止内容溢出 */
-.novel-synopsis-inner { overflow: hidden; }
-.fanletter-text-content { overflow: hidden; }
-
-/* 切换按钮层级提升 */
-.novel-synopsis-hint { position: relative; z-index: 1; }
-.fanletter-switch { position: relative; z-index: 1; }
-```
-
-#### **移动端适配**
-```css
-@media (max-width: 768px) {
-  .fanletter-inner,
-  .fanletter-inner-flip {
-    grid-template-columns: 1fr;
-    max-width: 100%;
-  }
-  
-  .fanletter-image-inner {
-    margin: 0 auto;
-  }
-  
-  .fanletter-signature {
-    text-align: center;
-  }
-}
-```
+| 顺序 | 旧位置 | 新位置 | 弹幕作者 |
+|------|--------|--------|----------|
+| 4 | 【空白の音符】 | - | 移至第2位 |
+| 5 | 【北斗肥龙】 | - | 移至第4位 |
 
 ---
 
-## 4. 影响与风险评估
+## ⚠️ 影响与风险评估
 
-### ⚠️ 潜在风险
+### 🔴 **破坏性变更**
+无
 
-| 风险项 | 严重程度 | 说明 |
-|--------|----------|------|
-| **字体加载失败** | 🟡 中等 | 如果 `Klee One` CDN 加载失败，将回退到系统 serif 字体 |
-| **高度同步异常** | 🟢 低 | `syncFanletterHeight2()` 依赖 DOM 元素存在，若元素缺失会静默失败 |
-| **移动端布局** | 🟢 低 | 新增的 `fanletter-inner-flip` 已包含响应式样式 |
+### 🟡 **潜在风险**
+| 风险项 | 描述 | 缓解措施 |
+|--------|------|----------|
+| 礼物显示逻辑反转 | `.gift-more-hidden` 和 `.gift-load-more` 的显示逻辑互换 | 需确认是否为预期行为（可能隐藏了"加载更多"按钮） |
+| 视频卡片占位 | 新增的视频卡片2、3为占位内容 | 需后续填充实际内容 |
 
-### ✅ 测试建议
+### ✅ **测试建议**
+1. **倒计时功能测试**：
+   - 验证生日当天（6月8日）显示"00:00:00"和"生日快乐！"
+   - 验证非生日日期正常倒计时
+   - 验证时区边缘情况（diff接近0时）
 
-1.  **字体渲染测试**
-    *   验证中日文混合文本显示正常
-    *   检查字体加载失败时的回退表现
-    *   测试旋转卡片（`.message-card`）的文本清晰度
+2. **交互功能测试**：
+   - 点击时间线中的"(இωஇ`｡)"外链，确认能正确打开B站动态
+   - 点击视频卡片，确认跳转正确
 
-2.  **粉丝来信功能测试**
-    *   测试第二个来信的中日文切换动画（650ms）
-    *   验证高度同步在长文本下的表现
-    *   检查移动端布局（图片居中、签名对齐）
+3. **UI样式测试**：
+   - 检查播放按钮hover效果（背景变深、放大）
+   - 检查视频播放量显示位置和样式
+   - 检查时间线外链hover效果
 
-3.  **响应式测试**
-    *   在 768px 断点下验证两个来信板块的布局
-    *   测试时间线工具提示的显示
+4. **内容完整性测试**：
+   - 确认礼物区域视频卡片显示正确
+   - 确认新增的"猫的切片"区域正常渲染
 
 ---
 
-## 5. 总结
+## 📌 总结
 
-本次变更主要围绕**字体系统现代化**和**内容扩展**展开：
-- ✅ 通过 CSS 变量实现字体统一管理，提升可维护性
-- ✅ 新增 `Klee One` 字体，优化中日文显示效果
-- ✅ 扩展粉丝来信功能，支持镜像布局和独立切换
-- ✅ 优化文本渲染质量，改善用户体验
+本次更新主要围绕**生日页面的UI优化和功能增强**：
+- 🎯 核心改进：倒计时逻辑更健壮，修复了负数时间显示bug
+- 🎨 视觉升级：播放按钮更现代化，新增视频播放量显示
+- 📝 内容丰富：新增4w粉里程碑和"猫的切片"视频区域
+- 🔗 交互增强：支持时间线外链点击跳转
 
-**建议**：在部署前进行跨浏览器字体加载测试，确保 CDN 稳定性。
+整体改动为**中等风险**，建议重点测试倒计时逻辑和礼物显示逻辑。
