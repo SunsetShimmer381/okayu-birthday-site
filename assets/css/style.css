@@ -1353,7 +1353,7 @@
 
   /* 3D 翻转容器 */
   .message-card-inner {
-    display: grid;
+    position: relative;
     width: 100%;
     transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     transform-style: preserve-3d;
@@ -1365,13 +1365,19 @@
 
   .message-card-front,
   .message-card-back {
-    grid-area: 1 / 1;
+    width: 100%;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     padding: 20px 22px;
   }
 
+  /* 「能屈能伸」的核心：始终只让「当前朝向用户的那一面」留在普通文档流里，
+     由它独自撑起 inner / 卡片的高度；另一面用绝对定位脱离文档流——
+     既不再撑高父容器，又因身处 preserve-3d 容器内、仍正常参与 3D 翻转。
+     于是从长(日)面翻到短(中)面时，撑高的不再是隐藏的正面，高度自然回落，
+     且 releaseCardHeight 释放内联高度后回归的 auto 高度=当前面，不再被锁死成 max。 */
   .message-card-front {
+    position: relative;
     font-family: var(--font-display);
     /* 优化文本渲染，避免旋转导致的模糊 */
     text-rendering: optimizeLegibility;
@@ -1383,8 +1389,22 @@
   }
 
   .message-card-back {
+    position: absolute;
+    top: 0;
+    left: 0;
     transform: rotateY(180deg);
     font-family: var(--font-display);
+  }
+
+  /* 翻到背面后角色互换：背面入流定高，正面脱流、不再撑高 */
+  .message-card-inner.flipped .message-card-front {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .message-card-inner.flipped .message-card-back {
+    position: relative;
   }
 
   /* 胶带装饰 — 手撕便签风 */
