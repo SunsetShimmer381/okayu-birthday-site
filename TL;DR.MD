@@ -1,285 +1,193 @@
-## 📋 高级摘要（TL;DR）
+## 1. 高层摘要 (TL;DR)
 
-- **影响范围**：中等 - 主要是UI样式优化、倒计时逻辑修复和内容更新
-- **核心变更**：
-  - ✨ 新增"猫的切片"视频展示区域
-  - 🎂 优化生日倒计时逻辑，修复负数时间显示问题
-  - 🎨 重构播放按钮样式（从文字"PLAY"改为三角形图标）
-  - 📝 更新时间线内容，新增4w粉里程碑
-  - 🔗 新增时间线外链点击功能
+*   **影响范围：** 🟡 **中等** - 重构了礼物展示区的布局系统，从固定三列网格改为响应式Masonry瀑布流
+*   **核心变更：**
+    *   ✨ 将CSS Grid三列布局改为CSS Columns Masonry布局
+    *   📐 调整图片比例：从 3:4 改为 9:16（竖版），移除 4:3 横版样式
+    *   🎨 新增占位卡片样式（虚线边框、半透明效果）
+    *   📱 优化移动端"查看更多"按钮的选择器逻辑
+    *   📝 更新视频播放量数据（10.7万 → 19.2万）
 
 ---
 
-## 🗺️ 视觉概览（代码与逻辑图）
+## 2. 可视化概览 (逻辑架构图)
 
 ```mermaid
 graph TD
-    subgraph "index.html - 页面结构"
-        A[时间线区域] --> B[新增4w粉里程碑]
-        B --> C[外链点击事件]
-        D[新增视频切片区域] --> E[视频卡片组件]
-        F[礼物区域] --> G[视频卡片重新排序]
+    subgraph "布局系统重构"
+        A[旧版: CSS Grid 3列布局] -->|重构为| B[新版: CSS Columns Masonry布局]
     end
     
-    subgraph "assets/js/main.js - 交互逻辑"
-        H[CountdownController.update] --> I{是否为生日当天?}
-        I -->|是| J[显示 00:00:00 + 生日快乐]
-        I -->|否| K[计算倒计时]
-        K --> L{diff < 0?}
-        L -->|是| M[重置为 00:00:00]
-        L -->|否| N[正常显示倒计时]
-        O[外链点击监听器] --> P[window.open]
+    subgraph "样式变更 assets/css/style.css"
+        B --> C[.gift-showcase<br/>column-count: 2]
+        B --> D[.gift-card-image.portrait-type<br/>aspect-ratio: 9/16]
+        B --> E[.gift-card-placeholder<br/>新增占位样式]
+        B --> F[移除 .image-horizontal<br/>4:3横版样式]
     end
     
-    subgraph "assets/css/style.css - 样式系统"
-        Q[.play-circle] --> R[黑色半透明背景 + 三角形图标]
-        S[.video-view-count] --> T[播放量显示组件]
-        U[.timeline-external-link] --> V[外链样式]
-        W[.gift-more-hidden] --> X[display: block]
+    subgraph "HTML结构重构 index.html"
+        G[卡片重新排序] --> H[9:16竖版图片]
+        G --> I[16:9视频]
+        G --> J[新增占位卡片]
     end
     
-    C -.-> O
-    E -.-> S
-    E -.-> Q
+    subgraph "JS逻辑优化 assets/js/main.js"
+        K[选择器更新] --> L[#page6 .gift-more-hidden<br/>更精确的作用域]
+    end
+    
+    style B fill:#bbdefb,color:#0d47a1
+    style E fill:#c8e6c9,color:#1a5e20
+    style J fill:#fff3e0,color:#e65100
 ```
 
 ---
 
-## 🔍 详细变更分析
+## 3. 详细变更分析
 
-### 🎨 **样式层（assets/css/style.css）**
+### 🎨 样式层变更 (`assets/css/style.css`)
 
-#### 新增样式组件
+#### 布局系统重构
 
-| 样式类名 | 用途 | 关键属性 |
-|---------|------|---------|
-| `.timeline-external-link` | 时间线外链样式 | 粉色虚线下划线，hover效果 |
-| `.video-view-count` | 视频播放量显示 | 左下角黑色半透明背景，圆角 |
+| 属性 | 旧值 | 新值 | 说明 |
+|------|------|------|------|
+| `.gift-showcase` 布局 | `display: grid`<br/>`grid-template-columns: 1fr 1fr 1fr` | `column-count: 2`<br/>`column-gap: 20px` | 从三列网格改为双列Masonry |
+| `.gift-showcase` 宽度 | - | `max-width: 760px`<br/>`margin: 0 auto 12px` | 限制最大宽度并居中 |
+| 卡片间距 | `gap: 20px` | `margin-bottom: 20px`<br/>`break-inside: avoid` | Masonry布局下使用margin |
 
-#### 播放按钮重构
+#### 图片比例调整
+
+| 类名 | 旧比例 | 新比例 | 变更类型 |
+|------|--------|--------|----------|
+| `.image-type` → `.portrait-type` | 3:4 (75%) | 9:16 (177.78%) | 竖版图片更修长 |
+| `.image-horizontal` | 4:3 | ❌ 已移除 | 横版样式删除 |
+| `.video-type` | 16:9 | 16:9 | 保持不变 |
+
+#### 新增占位卡片样式
 
 ```css
-/* 旧样式：白色背景 + "PLAY" 文字 */
-.play-circle {
-  width: 46px;
-  height: 46px;
-  background: rgba(255,255,255,0.9);
-  font-size: 11px;
-  color: #d4708a;
-  content: "PLAY";  /* 文字内容 */
+.gift-card-placeholder {
+  cursor: default;
+  opacity: 0.35;
+  /* 虚线边框 + 半透明背景 */
 }
-
-/* 新样式：黑色半透明背景 + 三角形图标 */
-.play-circle {
-  width: 56px;
-  height: 56px;
-  background: rgba(0,0,0,0.5);
-  font-size: 24px;
-  color: #fff;
-}
-.play-circle::before {
-  content: '\25B6';  /* Unicode 播放符号 ▶ */
-  margin-left: 4px;
+.gift-card-placeholder:hover {
+  transform: none; /* 禁用悬停倾斜效果 */
 }
 ```
 
-#### 礼物显示逻辑调整
+#### 移动端响应式调整
 
-| 样式类 | 旧值 | 新值 | 说明 |
-|--------|------|------|------|
-| `.gift-more-hidden` | `display: none` | `display: block` | 隐藏内容改为默认显示 |
-| `.gift-load-more` | `display: block` | `display: none` | 加载按钮改为隐藏 |
-
----
-
-### ⚙️ **逻辑层（assets/js/main.js）**
-
-#### 倒计时控制器重构
-
-**变更前逻辑：**
-```javascript
-update() {
-  const now = new Date();
-  const targetDate = this.getNextTargetDate();
-  const diff = targetDate - now;
-  // 计算时间...
-  // 然后检查是否为生日
-  const isBirthday = now.getMonth() === this.targetMonth && now.getDate() === this.targetDay;
-  if (isBirthday) {
-    this.elements.caption.innerHTML = '<span class="date">生日快乐！</span>';
-  }
-}
-```
-
-**变更后逻辑：**
-```javascript
-update() {
-  const now = new Date();
-  
-  // 1. 优先检查生日
-  const isBirthday = now.getMonth() === this.targetMonth && now.getDate() === this.targetDay;
-  if (isBirthday) {
-    this.elements.days.textContent = '00';
-    this.elements.hours.textContent = '00';
-    this.elements.mins.textContent = '00';
-    this.elements.secs.textContent = '00';
-    this.elements.caption.innerHTML = '<span class="date">生日快乐！</span>';
-    return;  // 提前返回
-  }
-
-  // 2. 计算倒计时
-  const targetDate = this.getNextTargetDate();
-  const diff = targetDate - now;
-
-  // 3. 防护：diff为负数时重置
-  if (diff < 0) {
-    console.warn('CountdownController: diff为负数，已重置');
-    this.elements.days.textContent = '00';
-    this.elements.hours.textContent = '00';
-    this.elements.mins.textContent = '00';
-    this.elements.secs.textContent = '00';
-    this.elements.caption.innerHTML = `距离<span class="date">${this.targetLabel}</span>还有`;
-    return;
-  }
-
-  // 4. 正常计算和显示
-  // ...
-}
-```
-
-**改进点：**
-- ✅ 生日检测提前，避免不必要的计算
-- ✅ 添加负数diff防护，防止显示负数时间
-- ✅ 生日当天强制显示"00:00:00"
-
-#### 新增外链点击监听器
-
-```javascript
-// Page3 时间线中外链链接（如动态帖子等）
-document.querySelectorAll('.timeline-external-link').forEach(link => {
-  link.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const url = link.dataset.url;
-    const target = link.dataset.target || '_blank';
-    if (url) {
-      window.open(url, target);
-    }
-  });
-});
-```
-
----
-
-### 📄 **内容层（index.html）**
-
-#### 时间线内容更新
-
-| 日期 | 旧标题 | 新标题 | 变更说明 |
-|------|--------|--------|----------|
-| 2026.05.31 | "首次超晚学汉语直播回" | "深夜学汉语直播回" | 标题简化 |
-| - | - | 2026.6.5 "4w粉啦！" | **新增里程碑** |
-
-**新增4w粉里程碑：**
-```html
-<div class="timeline-item">
-  <p class="timeline-date">2026.6.5</p>
-  <p class="timeline-title">4w粉啦！</p>
-  <p class="timeline-desc">
-    在下午1:51的时刻，猫羽おかゆ4w粉成就达成！
-    <span class="timeline-external-link" 
-          data-url="https://www.bilibili.com/opus/1210436665851510787" 
-          data-target="_blank">(இωஇ`｡)</span>
-  </p>
-</div>
-```
-
-#### 新增"猫的切片"视频区域
-
-```html
-<div class="video-section">
-  <div class="section-header">
-    <h3 class="section-title">猫的切片 · Highlights</h3>
-    <p class="section-desc">精彩直播片段回顾</p>
-  </div>
-  <div class="video-grid">
-    <!-- 视频卡片1：带播放量显示 -->
-    <div class="video-card" data-title="日本萝莉猫猫直播中习惯性摆出雷霆宅女坐姿" 
-         data-url="https://www.bilibili.com/video/BV1seEw6YEmL" 
-         data-bvid="BV1seEw6YEmL">
-      <div class="video-thumbnail">
-        <div class="video-view-count">10.7万</div>  <!-- 新增播放量 -->
-        <img src="./assets/images/highlight_1.webp" alt="视频封面">
-        <div class="video-duration">00:42</div>
-      </div>
-      <!-- ... -->
-    </div>
-    <!-- 视频卡片2、3占位 -->
-  </div>
-</div>
-```
-
-#### 礼物区域视频卡片重新排序
-
-| 位置 | 旧内容 | 新内容 |
+| 元素 | 旧样式 | 新样式 |
 |------|--------|--------|
-| 列1-下 | 【猫羽おかゆ】自制MV《快乐星猫》 | 【预留视频】（空白の音符） |
-| 列3-下 | 【预留】 | 【猫羽おかゆ】自制MV《快乐星猫》（かくさん潇潇落叶） |
-
-#### 移除内容
-- 删除底部的"bilibili介绍朋友"直达链接区域
+| `.gift-showcase` | `grid-template-columns: 1fr` | `column-count: 1` |
+| `.gift-more-hidden` | `display: block` | `display: none` |
+| `.gift-load-more` | `display: none` | `display: block` + 悬停效果 |
 
 ---
 
-### 📊 **数据层（assets/js/danmaku-data.js）**
+### 📄 HTML结构重构 (`index.html`)
 
-弹幕顺序调整：
+#### 卡片布局重组
 
-| 顺序 | 旧位置 | 新位置 | 弹幕作者 |
-|------|--------|--------|----------|
-| 4 | 【空白の音符】 | - | 移至第2位 |
-| 5 | 【北斗肥龙】 | - | 移至第4位 |
+**旧版结构（3列固定）：**
+```
+列1-上: 3:4图片  |  列2-上: 3:4图片  |  列3-上: 3:4图片
+列1-下: 4:3视频  |  列2-下: 4:3图片  |  列3-下: 4:3视频
+```
 
----
+**新版结构（Masonry流式）：**
+```
+9:16图片 → 16:9视频 → 16:9视频 → 9:16图片 → 16:9图片 → 占位卡片
+```
 
-## ⚠️ 影响与风险评估
+#### 内容更新
 
-### 🔴 **破坏性变更**
-无
+| 项目 | 旧值 | 新值 |
+|------|------|------|
+| 视频播放量 | 10.7万 | 19.2万 |
+| 视频描述 | "猫粥史上最高播放量" | "猫粥切片史上最高播放量" |
+| 预留视频标题 | "【预留视频】" | "【偶像大师/MMD】猫羽おかゆの恋のSOS" |
+| 书道标签 | - | CALLIGRAPHY |
 
-### 🟡 **潜在风险**
-| 风险项 | 描述 | 缓解措施 |
-|--------|------|----------|
-| 礼物显示逻辑反转 | `.gift-more-hidden` 和 `.gift-load-more` 的显示逻辑互换 | 需确认是否为预期行为（可能隐藏了"加载更多"按钮） |
-| 视频卡片占位 | 新增的视频卡片2、3为占位内容 | 需后续填充实际内容 |
+#### 新增元素
 
-### ✅ **测试建议**
-1. **倒计时功能测试**：
-   - 验证生日当天（6月8日）显示"00:00:00"和"生日快乐！"
-   - 验证非生日日期正常倒计时
-   - 验证时区边缘情况（diff接近0时）
-
-2. **交互功能测试**：
-   - 点击时间线中的"(இωஇ`｡)"外链，确认能正确打开B站动态
-   - 点击视频卡片，确认跳转正确
-
-3. **UI样式测试**：
-   - 检查播放按钮hover效果（背景变深、放大）
-   - 检查视频播放量显示位置和样式
-   - 检查时间线外链hover效果
-
-4. **内容完整性测试**：
-   - 确认礼物区域视频卡片显示正确
-   - 确认新增的"猫的切片"区域正常渲染
+```html
+<!-- 占位卡片 -->
+<div class="gift-card gift-card-placeholder gift-more-hidden">
+  <div class="gift-card-image video-type">
+    <div class="placeholder-content">
+      <span class="placeholder-icon">+</span>
+      <span class="placeholder-text">预留位置</span>
+    </div>
+  </div>
+</div>
+```
 
 ---
 
-## 📌 总结
+### ⚡ JavaScript逻辑优化 (`assets/js/main.js`)
 
-本次更新主要围绕**生日页面的UI优化和功能增强**：
-- 🎯 核心改进：倒计时逻辑更健壮，修复了负数时间显示bug
-- 🎨 视觉升级：播放按钮更现代化，新增视频播放量显示
-- 📝 内容丰富：新增4w粉里程碑和"猫的切片"视频区域
-- 🔗 交互增强：支持时间线外链点击跳转
+#### 选择器精确化
 
-整体改动为**中等风险**，建议重点测试倒计时逻辑和礼物显示逻辑。
+| 旧选择器 | 新选择器 | 优势 |
+|----------|----------|------|
+| `.gift-card.gift-more-hidden` | `#page6 .gift-more-hidden` | 限定作用域，避免意外匹配 |
+
+```javascript
+// 旧版
+const hiddenGifts = document.querySelectorAll('.gift-card.gift-more-hidden');
+
+// 新版
+const hiddenGifts = document.querySelectorAll('#page6 .gift-more-hidden');
+```
+
+#### 注释更新
+- "礼物卡片" → "特殊赠礼"
+- 新增初始状态说明注释
+
+---
+
+## 4. 影响与风险评估
+
+### ⚠️ 潜在风险
+
+| 风险项 | 严重性 | 说明 | 建议 |
+|--------|--------|------|------|
+| Masonry布局兼容性 | 🟡 中等 | CSS Columns在旧版浏览器支持有限 | 验证目标浏览器兼容性 |
+| 卡片顺序变化 | 🟢 低 | 视觉顺序改变，但内容未丢失 | 确认展示顺序符合预期 |
+| 图片比例调整 | 🟡 中等 | 3:4 → 9:16 可能导致图片裁剪 | 检查所有竖版图片的显示效果 |
+
+### ✅ 测试建议
+
+1. **布局测试**
+   - [ ] 验证PC端双列Masonry布局是否正常
+   - [ ] 验证移动端单列布局是否正常
+   - [ ] 测试不同屏幕尺寸下的卡片排列
+
+2. **交互测试**
+   - [ ] 测试"查看更多"按钮在移动端的展开/收起功能
+   - [ ] 验证占位卡片无悬停倾斜效果
+   - [ ] 测试卡片点击跳转功能
+
+3. **视觉测试**
+   - [ ] 检查9:16图片是否正确显示
+   - [ ] 验证占位卡片的虚线边框和透明度
+   - [ ] 确认视频播放量更新正确
+
+4. **兼容性测试**
+   - [ ] Chrome/Edge/Safari/Firefox 最新版
+   - [ ] iOS Safari 15+
+   - [ ] Android Chrome
+
+---
+
+## 5. 总结
+
+本次重构将礼物展示区从**固定三列网格布局**升级为**响应式Masonry瀑布流布局**，主要优势：
+
+- ✅ **更灵活的卡片排列**：不同比例的卡片可以自然堆叠
+- ✅ **更好的视觉流动性**：竖版9:16比例更适合现代移动端浏览
+- ✅ **预留扩展空间**：新增占位卡片便于未来添加内容
+- ✅ **更精确的选择器**：JS选择器限定作用域，避免潜在冲突
+
+**建议优先测试移动端体验**，因为Masonry布局在小屏幕上的表现是本次优化的重点。

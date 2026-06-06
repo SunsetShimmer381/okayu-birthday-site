@@ -1859,11 +1859,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 礼物卡片"查看更多"按钮（仅移动端生效）
+  // 特殊赠礼"查看更多"按钮（仅移动端生效）
   const giftLoadMoreBtn = document.getElementById('giftLoadMoreBtn');
   if (giftLoadMoreBtn) {
     let giftExpanded = false;
-    const hiddenGifts = document.querySelectorAll('.gift-card.gift-more-hidden');
+    const hiddenGifts = document.querySelectorAll('#page6 .gift-more-hidden');
+    // 初始状态：移动端隐藏，PC端CSS不生效所以始终可见
     giftLoadMoreBtn.addEventListener('click', () => {
       giftExpanded = !giftExpanded;
       hiddenGifts.forEach(card => {
