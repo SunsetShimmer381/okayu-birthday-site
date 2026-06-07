@@ -420,6 +420,64 @@
     margin-bottom: 48px;
   }
 
+  .page-title[data-timeline-lang] {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: opacity 0.3s ease;
+  }
+
+  .page-title[data-timeline-lang]:hover {
+    opacity: 0.8;
+  }
+
+  .timeline-lang-text {
+    display: inline-block;
+    border-bottom: 2px solid #a08090;
+    padding-bottom: 4px;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    min-width: 120px;
+  }
+
+  .page-title[data-timeline-lang="cn"] .timeline-lang-text {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  .timeline-lang-text-alt {
+    display: none;
+    opacity: 0;
+    transform: translateY(8px);
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%) translateY(8px);
+    border-bottom: 2px solid #a08090;
+    padding-bottom: 4px;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    min-width: 120px;
+  }
+
+  .page-title[data-timeline-lang="cn"] .timeline-lang-text-alt {
+    display: inline-block;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .timeline-lang-hint {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: #888;
+    margin-top: 8px;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+  }
+
+  .page-title[data-timeline-lang]:hover .timeline-lang-hint {
+    opacity: 1;
+  }
+
   .profile-container {
     display: grid;
     grid-template-columns: 1fr 1.5fr;
@@ -1940,6 +1998,8 @@
   column-gap: 20px;
   max-width: 760px;
   margin: 0 auto 12px;
+  overflow: visible;
+  padding-top: 8px;
 }
 
 .gift-load-more {
@@ -1960,12 +2020,16 @@
   page-break-inside: avoid;
   break-inside: avoid;
   margin-bottom: 20px;
-  transform: rotate(var(--tilt, 0deg));
-  transition: all 0.3s ease;
   cursor: pointer;
 }
 
-.gift-card:hover {
+.gift-card-inner {
+  position: relative;
+  transform: rotate(var(--tilt, 0deg));
+  transition: all 0.3s ease;
+}
+
+.gift-card:hover .gift-card-inner {
   transform: rotate(0deg) translateY(-3px);
 }
 
@@ -2012,7 +2076,7 @@
 /* 胶带 — 像真实纸胶带一样贴在卡片上边缘 */
 .gift-tape {
   position: absolute;
-  top: -6px;
+  top: 0;
   left: 20px;
   width: 48px;
   height: 15px;
@@ -2023,11 +2087,12 @@
   border-radius: 1px;
   z-index: 5;
   box-shadow: 0 1px 3px rgba(120, 80, 60, 0.08);
+  transform: translateY(-50%);
 }
 
 .gift-tape--center {
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
 }
 
 .gift-tape--right {

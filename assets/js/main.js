@@ -2030,4 +2030,118 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   });
+
+  // Page3 时间线语言切换
+  class TimelineLangController {
+    constructor() {
+      this.title = document.querySelector('.page-title[data-timeline-lang]');
+      this.titles = document.querySelectorAll('.timeline-title');
+      this.descs = document.querySelectorAll('.timeline-desc');
+      this.hint = document.querySelector('.timeline-lang-hint');
+      this.isJapanese = true;
+      this.isAnimating = false;
+      this.init();
+    }
+
+    init() {
+      if (!this.title) return;
+      this.title.addEventListener('click', () => this.toggle());
+    }
+
+    toggle() {
+      if (this.isAnimating) return;
+      this.isAnimating = true;
+
+      // 先渐隐所有内容
+      const allItems = [...this.titles, ...this.descs];
+      allItems.forEach(el => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.3s ease';
+      });
+      // 渐隐提示文字
+      if (this.hint) {
+        this.hint.style.opacity = '0';
+        this.hint.style.transition = 'opacity 0.3s ease';
+      }
+
+      setTimeout(() => {
+        // 切换语言数据
+        this.isJapanese = !this.isJapanese;
+        this.updateContent();
+        this.title.dataset.timelineLang = this.isJapanese ? 'ja' : 'cn';
+
+        // 渐显所有内容
+        setTimeout(() => {
+          allItems.forEach(el => {
+            el.style.opacity = '1';
+          });
+          // 渐显提示文字
+          if (this.hint) {
+            this.hint.style.opacity = '1';
+          }
+          setTimeout(() => {
+            // 清除内联样式
+            allItems.forEach(el => {
+              el.style.opacity = '';
+              el.style.transition = '';
+            });
+            if (this.hint) {
+              this.hint.style.opacity = '';
+              this.hint.style.transition = '';
+            }
+            this.isAnimating = false;
+          }, 400);
+        }, 50);
+      }, 350);
+    }
+
+    updateContent() {
+      this.titles.forEach(el => {
+        const text = this.isJapanese ? el.dataset.ja : el.dataset.cn;
+        if (text) el.textContent = text;
+      });
+      this.descs.forEach(el => {
+        const text = this.isJapanese ? el.dataset.ja : el.dataset.cn;
+        if (text) el.innerHTML = text;
+      });
+      // 更新提示文字
+      if (this.hint) {
+        const text = this.isJapanese ? this.hint.dataset.ja : this.hint.dataset.cn;
+        if (text) this.hint.textContent = text;
+      }
+      // 重新绑定视频链接事件
+      document.querySelectorAll('.timeline-video-link').forEach(link => {
+        link.removeEventListener('click', this.handleVideoLink);
+        link.addEventListener('click', this.handleVideoLink);
+      });
+      // 重新绑定外链事件
+      document.querySelectorAll('.timeline-external-link').forEach(link => {
+        link.removeEventListener('click', this.handleExternalLink);
+        link.addEventListener('click', this.handleExternalLink);
+      });
+    }
+
+    handleVideoLink(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      videoModalController.open({
+        title: e.currentTarget.dataset.title || '',
+        url: e.currentTarget.dataset.url || '',
+        desc: e.currentTarget.textContent || ''
+      });
+    }
+
+    handleExternalLink(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const url = e.currentTarget.dataset.url;
+      const target = e.currentTarget.dataset.target || '_blank';
+      if (url) {
+        window.open(url, target);
+      }
+    }
+  }
+
+  // 初始化时间线语言切换
+  new TimelineLangController();
 });
