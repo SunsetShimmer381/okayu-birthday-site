@@ -1,149 +1,215 @@
 ## 1. 高层摘要 (TL;DR)
 
-*   **影响范围：** 🟡 **中等** - 重构了礼物展示区的布局系统，从固定三列网格改为响应式Masonry瀑布流
+*   **影响范围：** 中等 - 优化了弹幕显示逻辑，更新了页面内容
 *   **核心变更：**
-    *   ✨ 将CSS Grid三列布局改为CSS Columns Masonry布局
-    *   📐 调整图片比例：从 3:4 改为 9:16（竖版），移除 4:3 横版样式
-    *   🎨 新增占位卡片样式（虚线边框、半透明效果）
-    *   📱 优化移动端"查看更多"按钮的选择器逻辑
-    *   📝 更新视频播放量数据（10.7万 → 19.2万）
+    *   ✨ 实现弹幕智能边界避让系统，防止弹幕遮挡切换线和底部区域
+    *   📱 修复移动端安全区域适配问题
+    *   🎵 新增歌曲展示的"查看更多"功能，添加3首新歌曲
+    *   🎨 优化卡片样式和布局细节
 
 ---
 
-## 2. 可视化概览 (逻辑架构图)
+## 2. 可视化概览
 
 ```mermaid
 graph TD
-    subgraph "布局系统重构"
-        A[旧版: CSS Grid 3列布局] -->|重构为| B[新版: CSS Columns Masonry布局]
+    subgraph "弹幕系统优化"
+        A["DanmakuManager"] --> B["_avoidConfigs 配置"]
+        A --> C["_calculateValidRanges()"]
+        A --> D["_randomPositionInRanges()"]
+        A --> E["_emit()"]
+        
+        B --> B1["模式0: 100vh - 避开底部6%"]
+        B --> B2["模式1: 50vh - 避开中间47-53%"]
+        B --> B3["模式2: 25vh - 避开中间22-28%"]
+        
+        C --> C1["计算基础安全边距"]
+        C --> C2["减去避开区域"]
+        C --> C3["返回有效区域数组"]
+        
+        D --> D1["计算总长度"]
+        D --> D2["随机选择位置"]
+        D --> D3["返回百分比位置"]
+        
+        E --> E1["应用最终top值"]
     end
     
-    subgraph "样式变更 assets/css/style.css"
-        B --> C[.gift-showcase<br/>column-count: 2]
-        B --> D[.gift-card-image.portrait-type<br/>aspect-ratio: 9/16]
-        B --> E[.gift-card-placeholder<br/>新增占位样式]
-        B --> F[移除 .image-horizontal<br/>4:3横版样式]
+    subgraph "容器尺寸控制"
+        F["DanmakuModeController"] --> G["applySize()"]
+        G --> G1["100vh → calc(100vh - 90px)"]
+        G --> G2["其他模式保持原值"]
+        F --> H["getCurrentMode()"]
     end
     
-    subgraph "HTML结构重构 index.html"
-        G[卡片重新排序] --> H[9:16竖版图片]
-        G --> I[16:9视频]
-        G --> J[新增占位卡片]
+    subgraph "内容更新"
+        I["歌曲展示区"] --> I1["新增3个隐藏视频卡片"]
+        I --> I2["查看更多按钮"]
+        I2 --> I3["toggle video-more-hidden"]
+        
+        J["猫切片区"] --> J1["更新视频内容"]
+        J1 --> J2["移除播放量显示"]
+        
+        K["礼物展示区"] --> K1["替换占位卡片"]
+        K1 --> K2["添加实际视频内容"]
     end
     
-    subgraph "JS逻辑优化 assets/js/main.js"
-        K[选择器更新] --> L[#page6 .gift-more-hidden<br/>更精确的作用域]
-    end
-    
-    style B fill:#bbdefb,color:#0d47a1
-    style E fill:#c8e6c9,color:#1a5e20
-    style J fill:#fff3e0,color:#e65100
+    style A fill:#bbdefb,color:#0d47a1
+    style F fill:#c8e6c9,color:#1a5e20
+    style I fill:#fff3e0,color:#e65100
 ```
 
 ---
 
 ## 3. 详细变更分析
 
-### 🎨 样式层变更 (`assets/css/style.css`)
+### 🎯 组件一：弹幕系统边界避让 (`assets/js/main.js`)
 
-#### 布局系统重构
+**变更说明：** 实现了智能弹幕位置计算系统，根据不同屏占比模式自动避开特定区域，防止弹幕遮挡切换线和底部安全区域。
 
-| 属性 | 旧值 | 新值 | 说明 |
-|------|------|------|------|
-| `.gift-showcase` 布局 | `display: grid`<br/>`grid-template-columns: 1fr 1fr 1fr` | `column-count: 2`<br/>`column-gap: 20px` | 从三列网格改为双列Masonry |
-| `.gift-showcase` 宽度 | - | `max-width: 760px`<br/>`margin: 0 auto 12px` | 限制最大宽度并居中 |
-| 卡片间距 | `gap: 20px` | `margin-bottom: 20px`<br/>`break-inside: avoid` | Masonry布局下使用margin |
+#### 新增配置和方法
 
-#### 图片比例调整
+| 方法/属性 | 说明 |
+|-----------|------|
+| `_avoidConfigs` | 边界避让配置数组，定义各模式需避开区域 |
+| `_calculateValidRanges()` | 计算有效发射区域（排除避开区域） |
+| `_randomPositionInRanges()` | 在有效区域内随机选择位置 |
+| `getCurrentMode()` | 获取当前屏占比模式索引 |
+| `isOn()` | 获取弹幕开关状态 |
 
-| 类名 | 旧比例 | 新比例 | 变更类型 |
-|------|--------|--------|----------|
-| `.image-type` → `.portrait-type` | 3:4 (75%) | 9:16 (177.78%) | 竖版图片更修长 |
-| `.image-horizontal` | 4:3 | ❌ 已移除 | 横版样式删除 |
-| `.video-type` | 16:9 | 16:9 | 保持不变 |
+#### 边界避让配置表
 
-#### 新增占位卡片样式
+| 模式索引 | 屏占比 | 避开区域 | 避开原因 |
+|---------|--------|---------|---------|
+| 0 | 100vh | 94%-100% | 底部安全区域 |
+| 1 | 50vh | 47%-53% | 切换线附近 |
+| 2 | 25vh | 22%-28% | 切换线附近 |
+
+**代码片段 - 有效区域计算逻辑：**
+```javascript
+// 从基础有效区域中减去需要避开的区域
+let validRanges = [{ start: safeTop, end: safeBottom }];
+
+for (const avoid of avoidPixelRanges) {
+  const newValid = [];
+  for (const valid of validRanges) {
+    // 左侧剩余有效区域
+    if (valid.start < avoid.start) {
+      newValid.push({ start: valid.start, end: Math.min(avoid.start, valid.end) });
+    }
+    // 右侧剩余有效区域
+    if (valid.end > avoid.end) {
+      newValid.push({ start: Math.max(avoid.end, valid.start), end: valid.end });
+    }
+  }
+  validRanges = newValid;
+}
+```
+
+---
+
+### 📱 组件二：容器尺寸与安全区域适配 (`assets/js/main.js` + `style.css`)
+
+**变更说明：** 修复了100vh模式下容器超出视口底部的问题，并优化了移动端安全区域适配。
+
+#### 尺寸计算修复
+
+| 模式 | 旧值 | 新值 | 修复说明 |
+|-----|------|------|---------|
+| 100vh | `100vh` | `calc(100vh - 90px)` | 减去顶部偏移量，避免超出底部 |
+
+#### CSS 安全区域优化
 
 ```css
-.gift-card-placeholder {
-  cursor: default;
-  opacity: 0.35;
-  /* 虚线边框 + 半透明背景 */
-}
-.gift-card-placeholder:hover {
-  transform: none; /* 禁用悬停倾斜效果 */
-}
-```
-
-#### 移动端响应式调整
-
-| 元素 | 旧样式 | 新样式 |
-|------|--------|--------|
-| `.gift-showcase` | `grid-template-columns: 1fr` | `column-count: 1` |
-| `.gift-more-hidden` | `display: block` | `display: none` |
-| `.gift-load-more` | `display: none` | `display: block` + 悬停效果 |
-
----
-
-### 📄 HTML结构重构 (`index.html`)
-
-#### 卡片布局重组
-
-**旧版结构（3列固定）：**
-```
-列1-上: 3:4图片  |  列2-上: 3:4图片  |  列3-上: 3:4图片
-列1-下: 4:3视频  |  列2-下: 4:3图片  |  列3-下: 4:3视频
-```
-
-**新版结构（Masonry流式）：**
-```
-9:16图片 → 16:9视频 → 16:9视频 → 9:16图片 → 16:9图片 → 占位卡片
-```
-
-#### 内容更新
-
-| 项目 | 旧值 | 新值 |
-|------|------|------|
-| 视频播放量 | 10.7万 | 19.2万 |
-| 视频描述 | "猫粥史上最高播放量" | "猫粥切片史上最高播放量" |
-| 预留视频标题 | "【预留视频】" | "【偶像大师/MMD】猫羽おかゆの恋のSOS" |
-| 书道标签 | - | CALLIGRAPHY |
-
-#### 新增元素
-
-```html
-<!-- 占位卡片 -->
-<div class="gift-card gift-card-placeholder gift-more-hidden">
-  <div class="gift-card-image video-type">
-    <div class="placeholder-content">
-      <span class="placeholder-icon">+</span>
-      <span class="placeholder-text">预留位置</span>
-    </div>
-  </div>
-</div>
+/* 新增安全区域底部内边距 */
+height: calc(60vh - 90px - env(safe-area-inset-bottom, 0px));
+padding-bottom: env(safe-area-inset-bottom, 0px);
+box-sizing: border-box;
 ```
 
 ---
 
-### ⚡ JavaScript逻辑优化 (`assets/js/main.js`)
+### 🎵 组件三：歌曲展示区扩展 (`index.html` + `main.js`)
 
-#### 选择器精确化
+**变更说明：** 为歌曲展示区添加了"查看更多"功能，新增3首隐藏歌曲。
 
-| 旧选择器 | 新选择器 | 优势 |
-|----------|----------|------|
-| `.gift-card.gift-more-hidden` | `#page6 .gift-more-hidden` | 限定作用域，避免意外匹配 |
+#### 新增歌曲内容
 
+| 歌曲标题 | 描述 | 时长 | BVID |
+|---------|------|------|------|
+| セカイ | 抱き締めながら キミと見たいセカイへ | 03:45 | BV1yREH6SExK |
+| 花に亡霊 | 夏の木陰に座った頃... | 04:12 | BV1CGVa6hE2E |
+| 地球最後の告白を | 臆病 でも今なら言えるんだ | 04:30 | BV1HPLS6mExY |
+
+**代码片段 - 查看更多功能：**
 ```javascript
-// 旧版
-const hiddenGifts = document.querySelectorAll('.gift-card.gift-more-hidden');
-
-// 新版
-const hiddenGifts = document.querySelectorAll('#page6 .gift-more-hidden');
+const songLoadMoreBtn = document.getElementById('songLoadMoreBtn');
+if (songLoadMoreBtn) {
+  let songExpanded = false;
+  const hiddenSongs = document.querySelectorAll('.video-section:nth-of-type(2) .video-card.video-more-hidden');
+  songLoadMoreBtn.addEventListener('click', () => {
+    songExpanded = !songExpanded;
+    hiddenSongs.forEach(card => {
+      card.classList.toggle('video-more-hidden', !songExpanded);
+    });
+    songLoadMoreBtn.textContent = songExpanded ? '收起 ▴' : '查看更多 ▾';
+  });
+}
 ```
 
-#### 注释更新
-- "礼物卡片" → "特殊赠礼"
-- 新增初始状态说明注释
+---
+
+### 🎨 组件四：样式优化 (`assets/css/style.css`)
+
+#### 卡片样式调整
+
+| 元素 | 属性 | 旧值 | 新值 |
+|-----|------|------|------|
+| `.profile-card-header` | padding | `28px 20px 14px` | `18px 20px 12px` |
+| `.profile-card-header h3` | font-size | `14px` | `13px` |
+| `.feature-card-header` | padding | `28px 20px 14px` | `16px 20px 10px` |
+| `.footer` | padding | `60px 24px 60px` | `32px 24px` |
+
+#### 浏览器兼容性增强
+
+为Masonry布局添加了浏览器前缀：
+
+```css
+.gift-showcase {
+  -webkit-column-count: 2;
+  -moz-column-count: 2;
+  column-count: 2;
+  -webkit-column-gap: 20px;
+  -moz-column-gap: 20px;
+  column-gap: 20px;
+}
+```
+
+#### 移除的样式
+
+- ❌ `.video-view-count` - 视频播放量显示样式（已从HTML中移除）
+
+---
+
+### 📝 组件五：内容更新 (`index.html`)
+
+#### 文本修正
+
+| 位置 | 旧文本 | 新文本 |
+|-----|--------|--------|
+| 时间线 | "边学中文边弹吉他" | "先学中文后弹吉他" |
+| Footer | "提供留言和视频支持的粉丝们" | "提供留言和各种礼物支持的粉丝们" |
+
+#### 猫切片区内容更新
+
+| 索引 | 旧标题 | 新标题 | 旧描述 | 新描述 |
+|-----|--------|--------|--------|--------|
+| 2 | 视频标题2 | 新晋日本萝莉开播两周就速通百舰... | 视频描述2 | 百舰!百舰! |
+| 3 | 视频标题3 | 樱花妹唱歌后太兴奋把桌子踹了... | 视频描述3 | 痛い痛い痛い~ |
+
+#### 礼物展示区更新
+
+- 将占位卡片替换为实际视频卡片
+- 修正图片路径：`gift_video1.webp` ↔ `gift_video3.webp` 交换
 
 ---
 
@@ -151,43 +217,29 @@ const hiddenGifts = document.querySelectorAll('#page6 .gift-more-hidden');
 
 ### ⚠️ 潜在风险
 
-| 风险项 | 严重性 | 说明 | 建议 |
-|--------|--------|------|------|
-| Masonry布局兼容性 | 🟡 中等 | CSS Columns在旧版浏览器支持有限 | 验证目标浏览器兼容性 |
-| 卡片顺序变化 | 🟢 低 | 视觉顺序改变，但内容未丢失 | 确认展示顺序符合预期 |
-| 图片比例调整 | 🟡 中等 | 3:4 → 9:16 可能导致图片裁剪 | 检查所有竖版图片的显示效果 |
+| 风险项 | 严重程度 | 说明 | 建议 |
+|-------|---------|------|------|
+| 弹幕位置计算 | 低 | 新增边界避让逻辑可能影响弹幕分布 | 测试各模式下弹幕显示效果 |
+| 容器高度变化 | 低 | 100vh模式高度减小可能影响弹幕显示范围 | 验证底部弹幕是否完整显示 |
+| 新增内容 | 低 | 新增歌曲卡片需确保资源文件存在 | 检查图片资源路径 |
 
 ### ✅ 测试建议
 
-1. **布局测试**
-   - [ ] 验证PC端双列Masonry布局是否正常
-   - [ ] 验证移动端单列布局是否正常
-   - [ ] 测试不同屏幕尺寸下的卡片排列
+1. **弹幕显示测试**
+   - 切换不同屏占比模式（100vh/50vh/25vh）
+   - 验证弹幕不会出现在避开区域
+   - 检查弹幕在有效区域内均匀分布
 
-2. **交互测试**
-   - [ ] 测试"查看更多"按钮在移动端的展开/收起功能
-   - [ ] 验证占位卡片无悬停倾斜效果
-   - [ ] 测试卡片点击跳转功能
+2. **歌曲展示功能测试**
+   - 点击"查看更多"按钮验证展开/收起功能
+   - 确认3首新歌曲卡片正确显示
 
-3. **视觉测试**
-   - [ ] 检查9:16图片是否正确显示
-   - [ ] 验证占位卡片的虚线边框和透明度
-   - [ ] 确认视频播放量更新正确
+3. **移动端适配测试**
+   - 在不同移动设备上测试安全区域适配
+   - 验证容器不会超出视口底部
 
-4. **兼容性测试**
-   - [ ] Chrome/Edge/Safari/Firefox 最新版
-   - [ ] iOS Safari 15+
-   - [ ] Android Chrome
+4. **资源完整性检查**
+   - 确认所有新增图片资源存在
+   - 验证视频链接可正常访问
 
 ---
-
-## 5. 总结
-
-本次重构将礼物展示区从**固定三列网格布局**升级为**响应式Masonry瀑布流布局**，主要优势：
-
-- ✅ **更灵活的卡片排列**：不同比例的卡片可以自然堆叠
-- ✅ **更好的视觉流动性**：竖版9:16比例更适合现代移动端浏览
-- ✅ **预留扩展空间**：新增占位卡片便于未来添加内容
-- ✅ **更精确的选择器**：JS选择器限定作用域，避免潜在冲突
-
-**建议优先测试移动端体验**，因为Masonry布局在小屏幕上的表现是本次优化的重点。

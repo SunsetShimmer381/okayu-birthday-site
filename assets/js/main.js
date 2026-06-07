@@ -419,6 +419,16 @@ class DanmakuManager {
     this._dedupSize = options.dedupSize || 5;
     // 暂停状态
     this._paused = false;
+    // 边界避开发射配置：每个屏占比模式下需要避开的边界区域
+    // 格式: { mode: 屏占比模式索引, avoidRanges: [[start%, end%], ...] }
+    this._avoidConfigs = [
+      // 100vh 模式：避开底部6%区域，确保弹幕完整显示
+      { mode: 0, avoidRanges: [[94, 100]] },
+      // 50vh 模式：避开中间47%-53%区域（切换线附近）
+      { mode: 1, avoidRanges: [[47, 53]] },
+      // 25vh 模式：避开中间22%-28%区域（切换线附近）
+      { mode: 2, avoidRanges: [[22, 28]] }
+    ];
     this.init();
   }
 
@@ -447,11 +457,105 @@ class DanmakuManager {
     // 弹幕高度约为 32px（PC端）或 24px（移动端）
     const danmakuHeight = this.isMobile ? 24 : 32;
     const containerHeight = this.container.offsetHeight;
-    // 可用高度 = 容器高度 - 弹幕高度
-    const availableHeight = Math.max(0, containerHeight - danmakuHeight);
-    // 在可用范围内随机位置
-    const topPct = (Math.random() * availableHeight / containerHeight) * 100;
+    
+    // 获取当前屏占比模式（从全局控制器获取）
+    const currentMode = window.danmakuModeController ? window.danmakuModeController.getCurrentMode() : 0;
+    
+    // 计算有效发射区域（排除边界区域）
+    const validRanges = this._calculateValidRanges(containerHeight, danmakuHeight, currentMode);
+    
+    // 在有效区域内随机选择一个位置
+    const topPct = this._randomPositionInRanges(validRanges, containerHeight);
+    
+    if (topPct === null) {
+      return null; // 没有有效区域可发射
+    }
+    
     return this._emit(name, text, cnText, topPct, durationSec);
+  }
+  
+  /**
+   * 计算有效发射区域（排除需要避开的边界区域）
+   * @param {number} containerHeight - 容器高度
+   * @param {number} danmakuHeight - 弹幕高度
+   * @param {number} currentMode - 当前屏占比模式索引
+   * @returns {Array} - 有效区域数组，格式: [{start: 起始像素, end: 结束像素}, ...]
+   */
+  _calculateValidRanges(containerHeight, danmakuHeight, currentMode) {
+    // 基础安全边距（顶部和底部各3%）
+    const baseMargin = 0.03; // 3%
+    const safeTop = containerHeight * baseMargin;
+    const safeBottom = containerHeight * (1 - baseMargin) - danmakuHeight;
+    
+    if (safeTop >= safeBottom) {
+      return []; // 没有有效区域
+    }
+    
+    // 获取当前模式需要避开的边界区域
+    const avoidConfig = this._avoidConfigs.find(c => c.mode === currentMode);
+    const avoidRanges = avoidConfig ? avoidConfig.avoidRanges : [];
+    
+    // 将避开区域转换为像素范围
+    const avoidPixelRanges = avoidRanges.map(range => ({
+      start: containerHeight * (range[0] / 100),
+      end: containerHeight * (range[1] / 100)
+    }));
+    
+    // 从基础有效区域中减去需要避开的区域
+    let validRanges = [{ start: safeTop, end: safeBottom }];
+    
+    for (const avoid of avoidPixelRanges) {
+      const newValid = [];
+      for (const valid of validRanges) {
+        // 避开区域与有效区域不重叠
+        if (avoid.end <= valid.start || avoid.start >= valid.end) {
+          newValid.push(valid);
+        } else {
+          // 左侧剩余有效区域
+          if (valid.start < avoid.start) {
+            newValid.push({ start: valid.start, end: Math.min(avoid.start, valid.end) });
+          }
+          // 右侧剩余有效区域
+          if (valid.end > avoid.end) {
+            newValid.push({ start: Math.max(avoid.end, valid.start), end: valid.end });
+          }
+        }
+      }
+      validRanges = newValid;
+    }
+    
+    // 过滤无效区域
+    return validRanges.filter(r => r.start < r.end);
+  }
+  
+  /**
+   * 在有效区域内随机选择一个位置
+   * @param {Array} validRanges - 有效区域数组
+   * @param {number} containerHeight - 容器高度
+   * @returns {number|null} - 随机位置百分比，无有效区域返回null
+   */
+  _randomPositionInRanges(validRanges, containerHeight) {
+    if (validRanges.length === 0) {
+      return null;
+    }
+    
+    // 计算所有有效区域的总长度
+    const totalLength = validRanges.reduce((sum, range) => sum + (range.end - range.start), 0);
+    
+    // 随机选择一个位置
+    let randomOffset = Math.random() * totalLength;
+    
+    // 找到随机位置所在的区域
+    for (const range of validRanges) {
+      const rangeLength = range.end - range.start;
+      if (randomOffset < rangeLength) {
+        const absolutePosition = range.start + randomOffset;
+        return (absolutePosition / containerHeight) * 100;
+      }
+      randomOffset -= rangeLength;
+    }
+    
+    return null;
   }
 
   _emit(name, text, cnText, topPct, durationSec) {
@@ -469,13 +573,10 @@ class DanmakuManager {
     el.dataset.name = escapedName;
     el.dataset.duration = durationSec;
 
-    // 弹幕挂回 #danmakuContainer 内部，position:absolute 相对容器定位。
-    // 容器是「受控舞台层」（z-index 低于顶层 UI + isolation 隔离 + mask 软边缘 + overflow 兜底），
-    // 因此弹幕的 translateZ/backface 合成层被封死在舞台内：既能抗 iOS 横向撕裂，
-    // 又绝不会穿透挡住导航栏/控制按钮。top 直接相对容器高度计算即可，
-    // 不再叠加容器在视口中的偏移（避免滚动时频繁读 getBoundingClientRect 抖动）。
+    // 弹幕相对容器定位，容器是受控舞台层（z-index 低于顶层 UI + isolation 隔离 + mask 软边缘 + overflow 兜底）
     const containerHeight = this.container.offsetHeight;
-    el.style.top = `${containerHeight * topPct / 100}px`;
+    const finalTop = containerHeight * topPct / 100;
+    el.style.top = `${finalTop}px`;
     el.style.position = 'absolute';
     el.style.animationDuration = `${durationSec}s`;
 
@@ -731,9 +832,7 @@ class MessageBoardRenderer {
     }
 
     card.addEventListener('mouseenter', () => {
-      // 悬浮跟随效果作用在外层 .message-card 上，与内层 .message-card-inner 的
-      // 3D rotateY 翻转互不影响，因此正反两面都应生效。
-      // （旧代码这里有 if (!flipped) 守卫，导致翻到背面后 hover 永久失效。）
+      // 悬浮效果与3D翻转互不影响，正反两面都应生效
       card.classList.add('message-card-hover');
     });
 
@@ -763,11 +862,7 @@ class MessageBoardRenderer {
 
   releaseCardHeight(card, inner) {
     setTimeout(() => {
-      // 致命补丁：释放写死的内联高度，回归 grid 自动等高。
-      // grid 单元格(正反面同处 1/1)天然取较高者撑开，永不溢出；
-      // 释放后卡片能自适应字体晚加载/窗口缩放导致的文本回流，
-      // 修复「翻面后高度被永久锁死、长文脱框」的致命缺陷。
-      // 此刻 rotateY 已转过 ~105deg（接近背面），高度回弹被旋转动作掩盖，几乎不可见。
+      // 释放内联高度，回归 grid 自动等高，避免翻面后高度被锁死
       card.style.height = '';
       card.style.transition = '';
     }, 350);
@@ -1263,8 +1358,29 @@ class DanmakuModeController {
 
   applySize() {
     const size = this._sizeModes[this._sizeMode];
-    this.container.style.height = size.height;
+    // 修复：当设置100vh模式时，需要减去顶部偏移量90px，避免容器超出视口底部
+    if (size.height === '100vh') {
+      this.container.style.height = 'calc(100vh - 90px)';
+    } else {
+      this.container.style.height = size.height;
+    }
     this.badge.textContent = size.badge;
+  }
+
+  /**
+   * 获取当前屏占比模式
+   * @returns {number} 当前模式索引
+   */
+  getCurrentMode() {
+    return this._sizeMode;
+  }
+
+  /**
+   * 获取弹幕开关状态
+   * @returns {boolean} 是否开启
+   */
+  isOn() {
+    return this._isOn;
   }
 
   destroy() {
@@ -1288,6 +1404,8 @@ class DanmakuModeController {
 
 // 初始化弹幕模式控制器
 const danmakuModeController = new DanmakuModeController({ manager: danmakuManager, autoPlayer: danmakuAutoPlayer });
+// 暴露到全局，供 DanmakuManager 使用
+window.danmakuModeController = danmakuModeController;
 
 // ===== 樱花飘落效果 =====
 class SakuraEffect {
@@ -1871,6 +1989,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         card.classList.toggle('gift-more-hidden', !giftExpanded);
       });
       giftLoadMoreBtn.textContent = giftExpanded ? '收起 ▴' : '查看更多 ▾';
+    });
+  }
+
+  // 歌曲部分"查看更多"按钮（复用视频部分的样式和类名）
+  const songLoadMoreBtn = document.getElementById('songLoadMoreBtn');
+  if (songLoadMoreBtn) {
+    let songExpanded = false;
+    const hiddenSongs = document.querySelectorAll('.video-section:nth-of-type(2) .video-card.video-more-hidden');
+    songLoadMoreBtn.addEventListener('click', () => {
+      songExpanded = !songExpanded;
+      hiddenSongs.forEach(card => {
+        card.classList.toggle('video-more-hidden', !songExpanded);
+      });
+      songLoadMoreBtn.textContent = songExpanded ? '收起 ▴' : '查看更多 ▾';
+      songLoadMoreBtn.classList.toggle('expanded', songExpanded);
     });
   }
 
