@@ -671,13 +671,16 @@ class MessageBoardRenderer {
     }
   }
 
-  // 数据清理和XSS防护
+  // 数据清理：仅做类型归一化与默认值。
+  // XSS 由渲染层负责——本组件全程使用 textContent 注入（见 createCardFace），
+  // textContent 不解析 HTML，已天然防注入。此处若再 escapeHtml 会导致双重转义，
+  // 令含 < > & 的文本显示成 &lt; 等乱码。
   sanitizeData(data) {
     if (!Array.isArray(data)) return [];
     return data.map(item => ({
-      name: item.name ? Utils.escapeHtml(String(item.name)) : '匿名',
-      text: item.text ? Utils.escapeHtml(String(item.text)) : '',
-      cnText: item.cnText ? Utils.escapeHtml(String(item.cnText)) : ''
+      name: item.name ? String(item.name) : '匿名',
+      text: item.text ? String(item.text) : '',
+      cnText: item.cnText ? String(item.cnText) : ''
     }));
   }
 
@@ -1071,6 +1074,9 @@ class MusicPlayer {
     this.currentIndex = 0;
     this.autoPlay = options.autoPlay !== undefined ? options.autoPlay : false;
     this._touchFired = false;
+    // 移动端长按会同时派发 touch 长按与 contextmenu（两者先后顺序不固定），
+    // 用时间戳去重，确保一次手势只切一首歌
+    this._lastUserSwitchTs = 0;
 
     // 播放列表（badge 显示曲目标记）
     this.playlist = [
@@ -1112,6 +1118,15 @@ class MusicPlayer {
     this.loadTrack(this.currentIndex);
   }
 
+  // 用户手势切歌（右键 / 长按）：600ms 内的重复触发视为同一手势，忽略
+  _userSwitchTrack() {
+    if (this.playlist.length <= 1) return;
+    const now = Date.now();
+    if (now - this._lastUserSwitchTs < 600) return;
+    this._lastUserSwitchTs = now;
+    this.switchTrack();
+  }
+
   setupEventListeners() {
     // 左键点击：开关
     this._clickHandler = () => {
@@ -1123,8 +1138,7 @@ class MusicPlayer {
     // 右键点击：切歌
     this._contextHandler = (e) => {
       e.preventDefault();
-      if (this.playlist.length <= 1) return;
-      this.switchTrack();
+      this._userSwitchTrack();
     };
 
     // 触屏：单击=开关，长按=切歌
@@ -1136,7 +1150,7 @@ class MusicPlayer {
       },
       () => {
         this._touchFired = true;
-        if (this.playlist.length > 1) this.switchTrack();
+        this._userSwitchTrack();
       },
       450
     );
@@ -1195,6 +1209,8 @@ class DanmakuModeController {
       { height: '25vh', badge: '1/4' }
     ];
     this._touchFired = false;
+    // 同 MusicPlayer：移动端长按会同时触发 touch 长按与 contextmenu，用时间戳去重
+    this._lastUserCycleTs = 0;
     this.init();
   }
 
@@ -1212,7 +1228,7 @@ class DanmakuModeController {
     // 右键点击：切换屏占比
     this._contextHandler = (e) => {
       e.preventDefault();
-      this.cycleSize();
+      this._userCycleSize();
     };
 
     // 触屏：单击=开关，长按=切换屏占比
@@ -1223,7 +1239,7 @@ class DanmakuModeController {
       },
       () => {
         this._touchFired = true;
-        this.cycleSize();
+        this._userCycleSize();
       },
       450
     );
@@ -1251,6 +1267,14 @@ class DanmakuModeController {
     if (!this._isOn) return;
     this._sizeMode = (this._sizeMode + 1) % this._sizeModes.length;
     this.applySize();
+  }
+
+  // 用户手势切换屏占比（右键 / 长按）：600ms 内的重复触发视为同一手势，忽略
+  _userCycleSize() {
+    const now = Date.now();
+    if (now - this._lastUserCycleTs < 600) return;
+    this._lastUserCycleTs = now;
+    this.cycleSize();
   }
 
   applyState() {
@@ -1401,18 +1425,25 @@ class PageVisibilityManager {
     document.addEventListener('visibilitychange', this._handleVisibility);
   }
 
-  /** 注册一个拥有 start()/stop() 方法的控制器 */
-  register(controller) {
+  /**
+   * 注册一个拥有 start()/stop() 方法的控制器。
+   * 可选 canStart()：返回 false 时，页面恢复可见也不会重启该控制器，
+   * 用于尊重用户已手动关闭的状态（如关闭弹幕后切后台再回来不应自动重启）。
+   */
+  register(controller, canStart) {
     if (controller && typeof controller.start === 'function' && typeof controller.stop === 'function') {
-      this._controllers.push(controller);
+      this._controllers.push({ controller, canStart });
     }
   }
 
   _handleVisibility() {
     if (document.hidden) {
-      this._controllers.forEach(c => c.stop());
+      this._controllers.forEach(({ controller }) => controller.stop());
     } else {
-      this._controllers.forEach(c => c.start());
+      this._controllers.forEach(({ controller, canStart }) => {
+        if (typeof canStart === 'function' && !canStart()) return;
+        controller.start();
+      });
     }
   }
 }
@@ -1420,7 +1451,8 @@ class PageVisibilityManager {
 // 注册需要后台节流的模块
 const pageVisibility = new PageVisibilityManager();
 pageVisibility.register(sakuraEffect);
-pageVisibility.register(danmakuAutoPlayer);
+// 弹幕播放器：仅当用户未手动关闭弹幕时，才在页面恢复可见后重启
+pageVisibility.register(danmakuAutoPlayer, () => danmakuModeController.isOn());
 
 // ===== 滚动提示控制器 =====
 class ScrollHintController {
@@ -1489,6 +1521,7 @@ class GiftModalController {
     this.title = document.getElementById('giftModalTitle');
     this.desc = document.getElementById('giftModalDesc');
     this.defaultTitle = options.defaultTitle || '特殊贈り物';
+    this._mutedBgm = false;
     this.init();
   }
 
@@ -1575,6 +1608,12 @@ class GiftModalController {
       iframe.allowFullscreen = true;
       this.content.appendChild(iframe);
 
+      // 视频带声音，静音背景音乐避免叠音（与 VideoModalController 行为一致）
+      if (musicPlayer && musicPlayer.audio) {
+        musicPlayer.audio.muted = true;
+        this._mutedBgm = true;
+      }
+
       this.title.textContent = title;
       this.desc.textContent = desc || '点击播放视频';
     } else if (type === 'image') {
@@ -1612,6 +1651,12 @@ class GiftModalController {
     const iframe = this.content.querySelector('iframe');
     if (iframe) {
       iframe.src = '';
+    }
+
+    // 恢复背景音乐（仅当本弹窗曾静音过它）
+    if (this._mutedBgm && musicPlayer && musicPlayer.audio) {
+      musicPlayer.audio.muted = false;
+      this._mutedBgm = false;
     }
   }
 }

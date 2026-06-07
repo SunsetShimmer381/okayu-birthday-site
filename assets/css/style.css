@@ -1180,6 +1180,9 @@
     padding-top: 56.25%;
     background: linear-gradient(135deg, #fef0f3 0%, #fce4ec 100%);
     overflow: hidden;
+    /* 与卡片圆角对齐（卡片 16px 圆角 - 1px 边框 ≈ 15px 内圆角），
+       让封面图自身被圆角裁剪，彻底消除移动端顶部白角 */
+    border-radius: 15px 15px 0 0;
   }
 
   .video-cover {
@@ -1189,6 +1192,9 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* 直接给封面图本体加圆角，圆角裁剪作用在图片栅格上而非依赖父级 overflow，
+       从根上消除移动端（百度/UC/X5、iOS Safari）顶部白边 */
+    border-radius: 15px 15px 0 0;
   }
 
   .video-duration {
@@ -2162,6 +2168,9 @@
   height: 100%;
   object-fit: cover;
   transition: transform 0.5s ease;
+  /* 圆角作用在图片本体：hover 时 img 会 scale 放大，仅靠父级 overflow 裁剪在
+     移动端易漏白边，给图片自身加同值圆角可从根上避免 */
+  border-radius: 16px;
 }
 
 .gift-card:hover .gift-card-image img {
@@ -2769,6 +2778,8 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  /* 与父级 4px 圆角对齐，图片本体圆角，避免移动端白边 */
+  border-radius: 4px;
 }
 
 .fanletter-signature {
