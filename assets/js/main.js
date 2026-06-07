@@ -85,10 +85,10 @@ class CountdownController {
   getNextTargetDate() {
     const now = new Date();
     const currentYear = now.getFullYear();
-    let targetDate = new Date(currentYear, this.targetMonth, this.targetDay, 23, 59, 59, 999);
+    let targetDate = new Date(currentYear, this.targetMonth, this.targetDay, 0, 0, 0, 0);
 
-    if (now > targetDate) {
-      targetDate = new Date(currentYear + 1, this.targetMonth, this.targetDay, 23, 59, 59, 999);
+    if (now >= targetDate) {
+      targetDate = new Date(currentYear + 1, this.targetMonth, this.targetDay, 0, 0, 0, 0);
     }
 
     return targetDate;
