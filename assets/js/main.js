@@ -1913,7 +1913,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const fanletterCN = document.getElementById('fanletterCN');
   const fanletterJP = document.getElementById('fanletterJP');
   if (fanletterText && fanletterSwitch) {
-    let isFanletterJp = true;
+    let isFanletterJp = fanletterText.classList.contains('is-jp');
     let fanletterAnimating = false;
     const fanletterContent = fanletterText.querySelector('.fanletter-text-content');
 
@@ -1962,7 +1962,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const fanletterCN2 = document.getElementById('fanletterCN2');
   const fanletterJP2 = document.getElementById('fanletterJP2');
   if (fanletterText2 && fanletterSwitch2) {
-    let isFanletterJp2 = true;
+    let isFanletterJp2 = fanletterText2.classList.contains('is-jp');
     let fanletterAnimating2 = false;
     const fanletterContent2 = fanletterText2.querySelector('.fanletter-text-content');
 
@@ -2005,7 +2005,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Page3 时间线中内联视频链接（如"自我介绍视频"）
+  // 粉丝来信3日语切换
+  const fanletterText3 = document.getElementById('fanletterText3');
+  const fanletterSwitch3 = document.getElementById('fanletterSwitch3');
+  const fanletterCN3 = document.getElementById('fanletterCN3');
+  const fanletterJP3 = document.getElementById('fanletterJP3');
+  if (fanletterText3 && fanletterSwitch3) {
+    let isFanletterJp3 = fanletterText3.classList.contains('is-jp');
+    let fanletterAnimating3 = false;
+    const fanletterContent3 = fanletterText3.querySelector('.fanletter-text-content');
+
+    const syncFanletterHeight3 = () => {
+      if (!fanletterContent3) return;
+      const activeEl = isFanletterJp3 ? fanletterJP3 : fanletterCN3;
+      if (activeEl) {
+        activeEl.style.position = 'relative';
+        activeEl.style.visibility = 'hidden';
+        activeEl.style.opacity = '1';
+        const height = activeEl.scrollHeight;
+        activeEl.style.position = '';
+        activeEl.style.visibility = '';
+        activeEl.style.opacity = '';
+        fanletterContent3.style.height = height + 'px';
+      }
+    };
+    syncFanletterHeight3();
+
+    fanletterSwitch3.addEventListener('click', () => {
+      if (fanletterAnimating3) return;
+      fanletterAnimating3 = true;
+
+      if (!isFanletterJp3) {
+        fanletterText3.classList.add('is-switching');
+        fanletterText3.classList.remove('is-switching-back');
+      } else {
+        fanletterText3.classList.add('is-switching-back');
+        fanletterText3.classList.remove('is-switching');
+      }
+
+      setTimeout(() => {
+        isFanletterJp3 = !isFanletterJp3;
+        fanletterText3.classList.toggle('is-jp', isFanletterJp3);
+        fanletterText3.classList.remove('is-switching', 'is-switching-back');
+        fanletterSwitch3.textContent = isFanletterJp3 ? '点击切换中文 ▸' : '日本語で読む ▸';
+        syncFanletterHeight3();
+        fanletterAnimating3 = false;
+      }, 650);
+    });
+  }
+
+  // 粉丝来信视频点击
   document.querySelectorAll('.timeline-video-link').forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
@@ -2028,6 +2077,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (url) {
         window.open(url, target);
       }
+    });
+  });
+
+  // Page6 粉丝来信视频点击（打开B站视频弹窗）
+  document.querySelectorAll('.fanletter-video-inner').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      videoModalController.open({
+        title: el.dataset.videoTitle || '',
+        url: el.dataset.videoUrl || '',
+        desc: el.dataset.videoDesc || ''
+      });
     });
   });
 

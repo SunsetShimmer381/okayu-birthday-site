@@ -1856,6 +1856,17 @@
   margin-top: 60px;
 }
 
+.credits-body {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 48px;
+  align-items: center;
+}
+
+.credits-left {
+  text-align: center;
+}
+
 .credits-text {
   font-size: clamp(16px, 2.5vw, 20px);
   color: #666;
@@ -1887,14 +1898,33 @@
 
 .credits-final {
   margin-top: 32px;
+  margin-bottom: 0;
   font-size: clamp(22px, 3.5vw, 32px);
   color: #d4708a;
   font-weight: 600;
   letter-spacing: 0.08em;
+  text-align: center;
 }
 
 .credits-final .placeholder-text {
   color: #d4708a;
+}
+
+.credits-right {
+  display: flex;
+  justify-content: center;
+}
+
+.credits-gift {
+  width: 100%;
+  max-width: 340px;
+}
+
+.credits-gift img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
 }
 
 .follow-section {
@@ -2749,6 +2779,63 @@
   font-family: var(--font-display);
 }
 
+/* 粉丝来信视频 */
+.fanletter-video {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fanletter-video-inner {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f5f0f0;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 12px rgba(120, 80, 60, 0.08);
+}
+
+.fanletter-video-inner:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(120, 80, 60, 0.15);
+}
+
+@supports (aspect-ratio: 1) {
+  .fanletter-video-inner {
+    height: auto;
+    padding-bottom: 0;
+  }
+}
+
+.fanletter-video-inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fanletter-video-inner .video-play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.08);
+  transition: background 0.3s ease;
+}
+
+.fanletter-video-inner:hover .video-play-overlay {
+  background: rgba(0, 0, 0, 0.18);
+}
+
 @media (max-width: 768px) {
   .fanletter-inner,
   .fanletter-inner-flip {
@@ -2765,6 +2852,10 @@
   .fanletter-image-inner {
     max-width: 220px;
     margin: 0 auto;
+  }
+
+  .fanletter-video-inner {
+    max-width: 100%;
   }
 
   .fanletter-signature {
@@ -3043,6 +3134,19 @@ img, video, iframe {
   .mini-card-content {
     word-break: break-word;
     overflow-wrap: anywhere;
+  }
+
+  .credits-body {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .credits-right {
+    order: -1;
+  }
+
+  .credits-gift {
+    max-width: 280px;
   }
 
   /* 10) 控制按钮在小屏轻微缩小，避开底部导航栏 */
