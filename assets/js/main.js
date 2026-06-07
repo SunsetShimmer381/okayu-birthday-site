@@ -147,11 +147,6 @@ class CountdownController {
       this.intervalId = null;
     }
   }
-
-  destroy() {
-    this.stop();
-    this.elements = null;
-  }
 }
 
 // 初始化倒计时
@@ -278,12 +273,6 @@ class ImageSlider {
       this.autoPlayId = null;
     }
   }
-
-  destroy() {
-    this.stopAutoPlay();
-    this.elements = null;
-    this.images = null;
-  }
 }
 
 // 初始化图片轮播
@@ -385,15 +374,6 @@ class NavController {
     if (page) {
       page.scrollIntoView({ behavior: 'smooth' });
     }
-  }
-
-  destroy() {
-    if (this.observer) {
-      this.observer.disconnect();
-      this.observer = null;
-    }
-    this.navItems = null;
-    this.pages = null;
   }
 }
 
@@ -653,11 +633,6 @@ class DanmakuManager {
     this.danmakus.forEach(el => el.remove());
     this.danmakus.clear();
     this._dedupPool = [];
-  }
-
-  destroy() {
-    this.clear();
-    this.container = null;
   }
 }
 
@@ -1033,22 +1008,6 @@ class MessageBoardRenderer {
       this.render();
     }
   }
-
-  destroy() {
-    if (this.elements.paginationPrev && this._prevPageHandler) {
-      this.elements.paginationPrev.removeEventListener('click', this._prevPageHandler);
-    }
-    if (this.elements.paginationNext && this._nextPageHandler) {
-      this.elements.paginationNext.removeEventListener('click', this._nextPageHandler);
-    }
-    if (this._resizeHandler) {
-      window.removeEventListener('resize', this._resizeHandler);
-      this._resizeHandler = null;
-    }
-    this.elements = null;
-    this._prevPageHandler = null;
-    this._nextPageHandler = null;
-  }
 }
 
 // ===== 弹幕自动播放器（简化版）=====
@@ -1092,12 +1051,6 @@ class DanmakuAutoPlayer {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
-  }
-
-  destroy() {
-    this.stop();
-    this.manager = null;
-    this.data = null;
   }
 }
 
@@ -1216,28 +1169,6 @@ class MusicPlayer {
     this.btn.classList.remove('on');
     this.btn.classList.add('off');
     this.isPlaying = false;
-  }
-
-  destroy() {
-    this.btn.removeEventListener('click', this._clickHandler);
-    this.btn.removeEventListener('contextmenu', this._contextHandler);
-    this.btn.removeEventListener('touchstart', this._touchStartHandler);
-    this.btn.removeEventListener('touchend', this._touchEndHandler);
-    this.btn.removeEventListener('touchmove', this._touchMoveHandler);
-    this.audio.removeEventListener('ended', this._endedHandler);
-    this.audio.pause();
-    this.audio.src = '';
-    this.audio = null;
-    this.btn = null;
-    this.badge = null;
-    this._clickHandler = null;
-    this._contextHandler = null;
-    this._touchHandler = null;
-    this._touchStartHandler = null;
-    this._touchEndHandler = null;
-    this._touchMoveHandler = null;
-    this._endedHandler = null;
-    this._touchFired = false;
   }
 }
 
@@ -1382,24 +1313,6 @@ class DanmakuModeController {
   isOn() {
     return this._isOn;
   }
-
-  destroy() {
-    this.btn.removeEventListener('click', this._clickHandler);
-    this.btn.removeEventListener('contextmenu', this._contextHandler);
-    this.btn.removeEventListener('touchstart', this._touchStartHandler);
-    this.btn.removeEventListener('touchend', this._touchEndHandler);
-    this.btn.removeEventListener('touchmove', this._touchMoveHandler);
-    this.container = null;
-    this.btn = null;
-    this.badge = null;
-    this.manager = null;
-    this._clickHandler = null;
-    this._contextHandler = null;
-    this._touchHandler = null;
-    this._touchStartHandler = null;
-    this._touchEndHandler = null;
-    this._touchMoveHandler = null;
-  }
 }
 
 // 初始化弹幕模式控制器
@@ -1469,14 +1382,6 @@ class SakuraEffect {
       this.intervalId = null;
     }
   }
-
-  destroy() {
-    this.stop();
-    this.activeSakuras.forEach(s => s.remove());
-    this.activeSakuras.clear();
-    this.flowerTypes = null;
-    this.flowerColors = null;
-  }
 }
 
 // 初始化樱花效果
@@ -1509,11 +1414,6 @@ class PageVisibilityManager {
     } else {
       this._controllers.forEach(c => c.start());
     }
-  }
-
-  destroy() {
-    document.removeEventListener('visibilitychange', this._handleVisibility);
-    this._controllers = [];
   }
 }
 
@@ -1574,12 +1474,6 @@ class ScrollHintController {
       this.hint.classList.add('hidden');
       this.isShown = false;
     }
-  }
-
-  destroy() {
-    window.removeEventListener('scroll', this._scrollHandler, { capture: true });
-    this.hint = null;
-    this._scrollHandler = null;
   }
 }
 
@@ -1644,39 +1538,16 @@ class GiftModalController {
         const type = item.dataset.type;
         const url = item.dataset.url;
         const title = item.dataset.title || item.querySelector('.gift-card-title')?.textContent || this.defaultTitle;
+        const desc = item.dataset.desc || item.querySelector('.gift-card-desc')?.textContent || '';
         
-        this.open(type, url, title);
+        this.open(type, url, title, desc);
       };
       item.addEventListener('click', itemClickHandler);
       this._giftItemHandlers.push({ element: item, handler: itemClickHandler });
     });
   }
 
-  destroy() {
-    // 清理事件监听器
-    if (this._eventHandlers) {
-      this._eventHandlers.forEach(({ element, type, handler }) => {
-        element.removeEventListener(type, handler);
-      });
-      this._eventHandlers = null;
-    }
-
-    // 清理礼物卡片事件监听器
-    if (this._giftItemHandlers) {
-      this._giftItemHandlers.forEach(({ element, handler }) => {
-        element.removeEventListener('click', handler);
-      });
-      this._giftItemHandlers = null;
-    }
-
-    this.overlay = null;
-    this.closeBtn = null;
-    this.content = null;
-    this.title = null;
-    this.desc = null;
-  }
-
-  open(type, url, title) {
+  open(type, url, title, desc) {
     // 清空内容
     this.content.innerHTML = '';
     this.content.classList.remove('video-mode');
@@ -1705,7 +1576,7 @@ class GiftModalController {
       this.content.appendChild(iframe);
 
       this.title.textContent = title;
-      this.desc.textContent = '点击播放视频';
+      this.desc.textContent = desc || '点击播放视频';
     } else if (type === 'image') {
       // 图片内容
       const img = document.createElement('img');
@@ -1725,7 +1596,7 @@ class GiftModalController {
       this.content.appendChild(img);
       
       this.title.textContent = title;
-      this.desc.textContent = '';
+      this.desc.textContent = desc || '';
     }
 
     // 显示弹窗
@@ -1853,16 +1724,6 @@ class TimelineImageViewer {
     this.currentImage.src = '';
     document.body.style.overflow = '';
   }
-
-  destroy() {
-    if (this.overlay && this.overlay.parentNode) {
-      this.overlay.parentNode.removeChild(this.overlay);
-    }
-    this.overlay = null;
-    this.imageContainer = null;
-    this.closeBtn = null;
-    this.currentImage = null;
-  }
 }
 
 // ===== 视频弹窗控制器 =====
@@ -1938,16 +1799,6 @@ class VideoModalController {
 
   buildEmbedSrc(url) {
     return Utils.buildBilibiliEmbedUrl(url, 0);
-  }
-
-  destroy() {
-    if (this._keydownHandler) {
-      document.removeEventListener('keydown', this._keydownHandler);
-    }
-    this.overlay = null;
-    this.iframe = null;
-    this.closeBtn = null;
-    this.cards = null;
   }
 }
 
