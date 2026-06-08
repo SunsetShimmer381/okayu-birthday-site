@@ -1,235 +1,155 @@
-## 📋 高级摘要 (TL;DR)
+## 1. 高层摘要（TL;DR）
 
-*   **影响范围:** 中等 - 新增粉丝来信视频功能，重构致谢页面布局
-*   **主要变更:**
-    *   ✨ 新增第三个粉丝来信板块，支持中日文切换和视频展示
-    *   🎬 将礼物卡片从静态图片改为可播放的B站视频
-    *   📐 致谢页面从单列布局重构为双列响应式布局（左文右图）
-    *   📱 完善移动端适配，确保各屏幕尺寸下的良好体验
+*   **影响范围：** 🟡 **中等** - 优化礼物弹窗的响应式布局和显示效果，新增弹幕祝福内容
+*   **核心变更：**
+    *   📱 优化礼物弹窗在图片/视频模式下的自适应布局，改善移动端体验
+    *   🎨 调整视频卡片描述文字颜色，提升可读性
+    *   ✉️ 新增一条来自 "Alice" 的生日弹幕祝福
+    *   📝 更新两个视频卡片的占位符内容为实际视频信息
 
 ---
 
-## 🗺️ 可视化概览 (代码与逻辑映射)
+## 2. 可视化概览（代码与逻辑图）
 
 ```mermaid
 graph TD
-    subgraph "HTML 结构 (index.html)"
-        A["新增粉丝来信板块 3<br>fanletter-section"]
-        B["礼物卡片类型变更<br>image → video"]
-        C["致谢页布局重构<br>credits-wrapper → credits-body"]
+    subgraph "用户交互流程"
+        A[用户点击礼物卡片] --> B{判断卡片类型}
     end
     
-    subgraph "CSS 样式 (assets/css/style.css)"
-        D["粉丝来信视频样式<br>.fanletter-video-inner"]
-        E["双列布局样式<br>.credits-body grid"]
-        F["响应式适配<br>@media max-width: 768px"]
+    subgraph "index.html"
+        C[视频卡片1 - 猫羽おかゆの恋のSOS]
+        D[视频卡片2 - 祝猫羽おかゆ生日快乐]
     end
     
-    subgraph "JavaScript 逻辑 (assets/js/main.js)"
-        G["粉丝来信3语言切换<br>syncFanletterHeight3()"]
-        H["视频点击事件<br>.fanletter-video-inner click"]
-        I["视频弹窗控制器<br>videoModalController.open()"]
+    subgraph "GiftModalController main.js"
+        E[openModal]
+        F[设置 dataset.mode]
+        G[设置 desc.innerHTML]
     end
     
-    A --> D
-    A --> G
-    A --> H
-    B --> D
-    C --> E
-    C --> F
-    H --> I
+    subgraph "CSS 样式适配 style.css"
+        H[.gift-modal-overlay data-mode=image]
+        I[.gift-modal-content.video-mode]
+        J[.gift-modal-desc 换行处理]
+    end
     
-    style A fill:#e3f2fd,color:#0d47a1
-    style B fill:#fff3e0,color:#e65100
-    style C fill:#f3e5f5,color:#7b1fa2
-    style G fill:#c8e6c9,color:#1a5e20
-    style I fill:#c8e6c9,color:#1a5e20
+    subgraph "弹幕数据 danmaku-data.js"
+        K[Alice 生日祝福弹幕]
+    end
+    
+    B -->|视频类型| E
+    B -->|图片类型| E
+    E --> F
+    F -->|mode=video| I
+    F -->|mode=image| H
+    E --> G
+    G --> J
+    C -.-> E
+    D -.-> E
+    K -.-> 弹幕显示
 ```
 
 ---
 
-## 📝 详细变更分析
+## 3. 详细变更分析
 
-### 🎨 组件 1: 粉丝来信板块 3 (新增)
+### 🎨 样式优化（`assets/css/style.css`）
 
-**变更说明:** 在 `index.html` 中新增了第三个粉丝来信板块，采用"左文右图"布局，支持中日文双语切换和视频展示。
+**变更内容：**
 
-**关键特性:**
-- **双语切换:** 默认显示日文，点击按钮切换至中文，带平滑过渡动画
-- **视频展示:** 右侧展示B站视频缩略图，点击可打开视频弹窗
-- **响应式设计:** 移动端自动调整为垂直布局
+| 样式选择器 | 原值 | 新值 | 说明 |
+|-----------|------|------|------|
+| `.gift-card-video-glass .gift-card-desc` | `color: #b09090` | `color: #5d4a4a` | 加深描述文字颜色，提升可读性 |
+| `.gift-modal` | `max-width: 90vw` | `width: 90%; max-width: 960px` | 优化弹窗宽度计算逻辑 |
+| `.gift-modal-content img` | `width: 100%` | `max-height: calc(90vh - 80px); width: auto` | 图片改为自适应高度，防止溢出 |
+| `.gift-modal-content.video-mode` | `width: 85vw` | `width: 100%` | 视频模式宽度改为100% |
 
-**HTML 结构:**
-```html
-<div class="fanletter-section">
-  <div class="fanletter-text is-jp" id="fanletterText3">
-    <!-- 中日文内容 -->
-  </div>
-  <div class="fanletter-video">
-    <!-- 视频缩略图 -->
-  </div>
-</div>
-```
+**新增样式：**
 
-**JavaScript 逻辑 (Source: `assets/js/main.js`):**
-| 函数/变量 | 功能描述 |
-|-----------|---------|
-| `syncFanletterHeight3()` | 同步文本容器高度，实现平滑过渡 |
-| `fanletterSwitch3.addEventListener()` | 处理语言切换点击事件 |
-| `isFanletterJp3` | 当前语言状态标志 |
-
----
-
-### 🎬 组件 2: 礼物卡片类型变更
-
-**变更说明:** 将礼物卡片从静态图片类型改为视频类型，支持B站视频播放。
-
-**数据变更表:**
-
-| 属性 | 旧值 | 新值 | 说明 |
-|------|------|------|------|
-| `data-type` | `image` | `video` | 卡片类型标识 |
-| `data-url` | `./assets/images/gift_tutu.webp` | `https://www.bilibili.com/video/BV1NnEt6MEX4` | 视频链接 |
-| `data-title` | `更新失敗の書道` | `【预留标题】` | 视频标题 |
-| `data-desc` | `お誕生日の佳き日に...` | `预留描述` | 视频描述 |
-| `src` | `gift_tutu.webp` | `gift_mc.webp` | 缩略图资源 |
-| 标签 | `CALLIGRAPHY` | `VIDEO` | 卡片标签 |
-
-**新增元素:**
-- 视频播放遮罩层 (`.video-play-overlay`)
-- 播放按钮图标 (`.play-circle`)
-
----
-
-### 📐 组件 3: 致谢页面布局重构
-
-**变更说明:** 将致谢页面从单列垂直布局重构为双列网格布局，提升视觉层次感。
-
-**布局结构对比:**
-
-| 布局类型 | 旧结构 | 新结构 |
-|---------|--------|--------|
-| 容器 | `.credits-wrapper` | `.credits-body` |
-| 左侧内容 | 无独立容器 | `.credits-left` (文字内容) |
-| 右侧内容 | 无独立容器 | `.credits-right` (图片展示) |
-| 布局方式 | 垂直堆叠 | Grid 布局 (1fr 340px) |
-
-**CSS 样式 (Source: `assets/css/style.css`):**
 ```css
-.credits-body {
-  display: grid;
-  grid-template-columns: 1fr 340px;  /* 左侧自适应，右侧固定340px */
-  gap: 48px;
-  align-items: center;
+/* 图片模式 — 弹窗自适应图片大小 */
+.gift-modal-overlay[data-mode="image"] .gift-modal {
+  width: auto;
+  max-width: 90vw;
 }
-```
 
-**响应式适配:**
-```css
-@media (max-width: 768px) {
-  .credits-body {
-    grid-template-columns: 1fr;  /* 移动端单列 */
-    gap: 32px;
-  }
-  .credits-right {
-    order: -1;  /* 图片在移动端显示在上方 */
-  }
+/* 描述文字换行处理 */
+.gift-modal-desc {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 个人页面左侧特性卡片 */
+.profile-left-column > .feature-card {
+  flex: 1;
 }
 ```
 
 ---
 
-### 🎨 组件 4: 粉丝来信视频样式 (新增)
+### 📝 内容更新（`index.html`）
 
-**变更说明:** 为粉丝来信视频添加完整的交互样式和动画效果。
+**视频卡片内容更新：**
 
-**样式特性表:**
+| 卡片位置 | 属性 | 原值（占位符） | 新值（实际内容） |
+|---------|------|---------------|-----------------|
+| 卡片1 | `data-title` | 【预留视频】 | 【偶像大师/MMD】猫羽おかゆの恋のSOS |
+| 卡片1 | `data-desc` | 空白の音符 | 空白の音符 |
+| 卡片2 | `data-title` | 【预留标题】 | 祝猫羽おかゆ生日快乐 |
+| 卡片2 | `data-desc` | 预留描述 | Airer-Archer Noahflan 是钢板哦 贰玖...（多人署名） |
 
-| 样式类 | 功能 | 关键属性 |
-|--------|------|---------|
-| `.fanletter-video-inner` | 视频容器 | 16:9 比例，圆角 12px |
-| `.video-play-overlay` | 播放遮罩 | 半透明黑色背景 (0.08) |
-| Hover 效果 | 悬停交互 | 缩放 1.02x，阴影增强 |
-| 过渡动画 | 平滑效果 | `transition: 0.3s ease` |
+---
 
-**兼容性处理:**
-```css
-@supports (aspect-ratio: 1) {
-  .fanletter-video-inner {
-    height: auto;
-    padding-bottom: 0;  /* 现代浏览器使用 aspect-ratio */
-  }
+### ⚙️ 逻辑增强（`assets/js/main.js`）
+
+**GiftModalController 类更新：**
+
+```javascript
+// 视频模式
+this.overlay.dataset.mode = 'video';  // 新增：设置模式标识
+this.desc.innerHTML = desc || '点击播放视频';  // 改为 innerHTML 支持富文本
+
+// 图片模式  
+this.overlay.dataset.mode = 'image';  // 新增：设置模式标识
+```
+
+**变更说明：**
+- 通过 `dataset.mode` 属性让 CSS 能够区分不同模式，应用不同的布局策略
+- 使用 `innerHTML` 替代 `textContent`，允许描述中包含 HTML 标签（如 `<br>` 换行）
+
+---
+
+### ✉️ 弹幕数据新增（`assets/js/danmaku-data.js`）
+
+**新增弹幕条目：**
+
+```javascript
+{
+  name: '【Alice】',
+  text: '【猫羽おかゆさん、こんにちは、アリスです。お誕生日おめでとうございます。これからの配信活動が笑顔と楽しさにあふれますように。これからも、私たち猫羽粥の切り抜きグループはずっとあなたのそばで応援し続けます！】',
+  cnText: '【猫羽粥，你好，我是Alice。生日快乐。愿你今后的直播活动充满笑容与快乐。今后，我们猫羽粥的剪辑组也会一直在你身边，继续为你加油！】'
 }
 ```
 
 ---
 
-### ⚡ 组件 5: JavaScript 交互逻辑
+## 4. 影响与风险评估
 
-**变更说明:** 新增粉丝来信3的语言切换和视频点击事件处理。
+### ✅ 积极影响
+- 📱 **移动端体验提升：** 图片弹窗现在会根据图片尺寸自适应，避免在大屏上过度拉伸
+- 🎯 **内容可读性增强：** 视频卡片描述文字颜色加深，更易于阅读
+- 🎨 **布局灵活性提高：** 通过 `data-mode` 机制，CSS 可以针对不同内容类型应用最优布局
 
-**事件处理流程:**
+### ⚠️ 风险点
+| 风险项 | 描述 | 建议 |
+|--------|------|------|
+| **HTML 注入风险** | 使用 `innerHTML` 渲染描述内容 | 确保数据来源可信，或添加 HTML 过滤 |
+| **图片尺寸异常** | `max-height: calc(90vh - 80px)` 可能导致超大图片被压缩 | 测试不同尺寸图片的显示效果 |
 
-```mermaid
-sequenceDiagram
-    participant User as 用户
-    participant Switch as 切换按钮
-    participant Text3 as fanletterText3
-    participant Video as 视频容器
-    participant Modal as 视频弹窗
-    
-    User->>Switch: 点击切换语言
-    Switch->>Text3: 添加切换动画类
-    Note over Text3: 650ms 延迟
-    Text3->>Text3: 切换 is-jp 类
-    Text3->>Text3: 更新按钮文本
-    Text3->>Text3: 同步容器高度
-    
-    User->>Video: 点击视频缩略图
-    Video->>Modal: 调用 open() 方法
-    Modal->>Modal: 显示B站视频弹窗
-```
-
-**新增代码块:**
-- **语言切换:** `fanletterSwitch3.addEventListener()` (行 2034-2054)
-- **视频点击:** `.fanletter-video-inner.forEach()` (行 2084-2094)
+### 🧪 测试建议
+1. **弹窗响应式测试：** 在不同屏幕尺寸下测试图片和视频弹窗的显示效果
+2. **内容渲染测试：** 验证描述中包含 `<br>` 等标签时的换行效果
+3. **弹幕显示测试：** 确认新增的 Alice 弹幕能正常显示
 
 ---
-
-## ⚠️ 影响与风险评估
-
-### 🔴 破坏性变更
-无破坏性变更，所有修改为新增或重构，不影响现有功能。
-
-### 🟡 潜在风险
-| 风险项 | 风险等级 | 缓解措施 |
-|--------|---------|---------|
-| 视频链接失效 | 低 | 建议添加视频加载失败处理 |
-| 移动端布局错乱 | 低 | 已添加响应式断点，需多设备测试 |
-| 高度同步计算误差 | 低 | 使用 `scrollHeight` 动态计算，兼容性好 |
-
-### ✅ 测试建议
-1. **功能测试:**
-   - 验证粉丝来信3的中日文切换动画流畅性
-   - 测试视频点击是否能正确打开B站弹窗
-   - 检查礼物卡片视频播放功能
-
-2. **布局测试:**
-   - 桌面端 (1920x1080): 验证双列布局正常
-   - 平板端 (768px): 验证临界点布局切换
-   - 移动端 (375x667): 验证垂直堆叠顺序
-
-3. **兼容性测试:**
-   - 测试 `aspect-ratio` 不支持的旧浏览器
-   - 验证视频加载性能和懒加载效果
-
----
-
-## 📊 变更统计
-
-| 文件 | 新增行数 | 删除行数 | 净变更 |
-|------|---------|---------|--------|
-| `index.html` | +58 | -8 | +50 |
-| `assets/css/style.css` | +75 | -2 | +73 |
-| `assets/js/main.js` | +48 | -1 | +47 |
-| **总计** | **+181** | **-11** | **+170** |

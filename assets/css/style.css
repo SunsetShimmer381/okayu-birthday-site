@@ -498,6 +498,10 @@
     box-sizing: border-box;
   }
 
+  .profile-left-column > .feature-card {
+    flex: 1;
+  }
+
   @media (max-width: 768px) {
     .profile-container {
       grid-template-columns: 1fr;
@@ -2106,7 +2110,7 @@
 
 .gift-card-video-glass .glass-overlay .gift-card-desc,
 .gift-card-video-glass .glass-overlay .gift-card-date {
-  color: #b09090;
+  color: #5d4a4a;
 }
 
 /* 胶带 — 像真实纸胶带一样贴在卡片上边缘 */
@@ -2905,7 +2909,8 @@
   position: relative;
   background: #fff;
   border-radius: 18px;
-  max-width: 90vw;
+  width: 90%;
+  max-width: 960px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -2952,14 +2957,22 @@
 
 .gift-modal-content img {
   display: block;
-  width: 100%;
+  max-height: calc(90vh - 80px);
+  width: auto;
   height: auto;
+  margin: 0 auto;
+}
+
+/* 图片模式 — 弹窗自适应图片大小 */
+.gift-modal-overlay[data-mode="image"] .gift-modal {
+  width: auto;
+  max-width: 90vw;
 }
 
 /* 视频模式 — 与 Page4 .video-modal-content 采用相同 padding-top 方案 */
 .gift-modal-content.video-mode {
   position: relative;
-  width: 85vw;
+  width: 100%;
   max-width: 960px;
   padding-top: 56.25%; /* 16:9，相对 .gift-modal 宽度计算 */
   background: #000;
@@ -2974,6 +2987,11 @@
   width: 100%;
   height: 100%;
   border: none;
+}
+
+.gift-modal-desc {
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .gift-modal-caption {

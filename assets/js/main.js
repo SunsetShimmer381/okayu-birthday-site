@@ -1600,6 +1600,7 @@ class GiftModalController {
     } else if (type === 'video') {
       // 与 Page4 VideoModalController 采用相同的 padding-top 容器方案
       this.content.classList.add('video-mode');
+      this.overlay.dataset.mode = 'video';
       const embedUrl = Utils.buildBilibiliEmbedUrl(url, 1);
 
       const iframe = document.createElement('iframe');
@@ -1615,9 +1616,10 @@ class GiftModalController {
       }
 
       this.title.textContent = title;
-      this.desc.textContent = desc || '点击播放视频';
+      this.desc.innerHTML = desc || '点击播放视频';
     } else if (type === 'image') {
       // 图片内容
+      this.overlay.dataset.mode = 'image';
       const img = document.createElement('img');
       img.src = url;
       img.alt = title;
