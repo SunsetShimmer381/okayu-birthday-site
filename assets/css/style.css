@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
-@import url('https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.1.0/style.css');
+@import url('../fonts/lxgw-wenkai-local.css');
 
   * {
     margin: 0;
@@ -13,6 +12,7 @@
 
   body {
     font-family: var(--font-display);
+    font-weight: 400;
     background-color: #fff5f8;
     color: #333;
     line-height: 1.6;
@@ -39,6 +39,7 @@
 
   .nav-item {
     font-size: clamp(11px, 2vw, 16px);
+    font-weight: 400;
     color: #aaa;
     cursor: pointer;
     padding: clamp(4px, 1vh, 6px) clamp(8px, 2vw, 12px);
@@ -53,7 +54,7 @@
 
   .nav-item.active {
     color: #e91e8c;
-    font-weight: 500;
+    font-weight: 700;
     background-color: rgba(255, 183, 197, 0.15);
   }
 
@@ -100,6 +101,7 @@
 
   .birthday-text {
     font-size: 22px;
+    font-weight: 300;
     color: #a08090;
     margin-bottom: 8px;
   }
@@ -146,12 +148,14 @@
 
   .romaji-text {
     font-size: clamp(14px, 3vw, 36.5px);
+    font-weight: 300;
     color: #999;
     margin-bottom: 28px;
   }
 
   .profile-text {
     font-size: clamp(15px, 2.2vw, 18px);
+    font-weight: 400;
     color: #666;
     line-height: 1.8;
   }
@@ -183,7 +187,7 @@
   .cd-cell .num {
     font-size: clamp(22px, 3vw, 32px);
     font-variant-numeric: tabular-nums;
-    font-weight: 600;
+    font-weight: 700;
     color: #d4708a;
     line-height: 1;
     letter-spacing: -0.01em;
@@ -198,6 +202,7 @@
   .cd-cell .lbl {
     margin-top: 6px;
     font-size: 9px;
+    font-weight: 400;
     letter-spacing: 0.15em;
     color: #999;
     display: block;
@@ -207,19 +212,20 @@
   .cd-caption {
     margin-bottom: 10px;
     font-size: 12px;
+    font-weight: 300;
     color: #999;
     letter-spacing: 0.08em;
   }
 
   .cd-caption .date {
     color: #d4708a;
-    font-weight: 600;
+    font-weight: 700;
     margin: 0 4px;
   }
 
   /* ===== 拍立得相纸卡片 ===== */
   :root {
-    --font-display: 'LXGW WenKai', 'Klee One', serif;
+    --font-display: 'LXGW WenKai', 'PingFang SC', 'Microsoft YaHei', serif;
     --accent: #d4708a;
     --accent-2: #c06078;
     --accent-3: #e89bb3;
@@ -467,7 +473,7 @@
   .timeline-lang-hint {
     display: block;
     font-size: 11px;
-    font-weight: 400;
+    font-weight: 300;
     color: #888;
     margin-top: 8px;
     opacity: 0.7;
@@ -531,7 +537,7 @@
 
   .profile-card-header h3 {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     color: #c08090;
     margin: 0;
     line-height: 1.4;
@@ -556,14 +562,14 @@
   .info-label {
     font-size: 13px;
     color: #b09090;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   .info-value {
     font-size: 13px;
     color: #d4708a;
     text-align: right;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   .profile-right-section {
@@ -608,7 +614,7 @@
 
   .mini-card-header h4 {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: #c08090;
     margin: 0;
     letter-spacing: 0.08em;
@@ -621,6 +627,7 @@
   .mini-card-content p {
     margin: 0;
     font-size: 13px;
+    font-weight: 400;
     color: #888;
     line-height: 1.6;
   }
@@ -636,7 +643,7 @@
     display: inline-block;
     padding: 5px 14px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     color: #d4708a;
     background: rgba(255, 245, 248, 0.9);
     border: 1px solid rgba(212, 112, 138, 0.18);
@@ -700,7 +707,7 @@
 
   .feature-card-header h3 {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     color: #c08090;
     margin: 0;
     line-height: 1.4;
@@ -878,6 +885,7 @@
 
   .timeline-desc {
     font-size: 14px;
+    font-weight: 400;
     color: #666;
   }
 
@@ -962,7 +970,7 @@
     font-size: 12px;
     color: #d4708a;
     margin-top: 8px;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   /* 响应式调整 */
@@ -1096,6 +1104,7 @@
 
   .section-desc {
     font-size: 13px;
+    font-weight: 300;
     color: #999;
     margin: 0;
     margin-left: auto;
@@ -1219,7 +1228,7 @@
 
   .video-title {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     color: #333;
     margin: 0 0 6px 0;
     overflow: hidden;
@@ -1229,6 +1238,7 @@
 
   .video-desc {
     font-size: 12px;
+    font-weight: 400;
     color: #999;
     margin: 0;
     line-height: 1.4;
@@ -1381,7 +1391,7 @@
 
   .messages-stats span {
     color: #FF698F;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   /* 留言卡片容器 - 两列瀑布流布局 */
@@ -1568,7 +1578,7 @@
     background: #fff;
     color: #FF698F;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 400;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
@@ -1602,7 +1612,7 @@
     background: #fff;
     color: #FF698F;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: none;
@@ -1694,7 +1704,7 @@
 
   .danmaku-item .danmaku-name {
     color: #c05850;
-    font-weight: 500;
+    font-weight: 400;
     margin-right: 4px;
   }
 
@@ -1764,7 +1774,7 @@
 
   .btn-text {
     font-size: 18px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 1;
     position: relative;
     z-index: 1;
@@ -1903,7 +1913,7 @@
 
 .credits-item .placeholder-text {
   color: #d4708a;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .credits-final {
@@ -1911,7 +1921,7 @@
   margin-bottom: 0;
   font-size: clamp(22px, 3.5vw, 32px);
   color: #d4708a;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-align: center;
 }
@@ -1948,7 +1958,7 @@
 .follow-section .follow-text {
   font-size: clamp(15px, 2.2vw, 18px);
   color: #888;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .social-links {
@@ -1967,7 +1977,7 @@
   text-decoration: none;
   border-radius: 20px;
   font-size: clamp(13px, 2vw, 15px);
-  font-weight: 500;
+  font-weight: 400;
   transition: all 0.3s ease;
 }
 
@@ -2315,7 +2325,7 @@
 
 .gift-card-title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: #555;
   letter-spacing: 1px;
   margin: 0 0 3px;
@@ -2344,7 +2354,7 @@
 
 .book-divider-title {
   font-size: 22px;
-  font-weight: 600;
+  font-weight: 700;
   color: #9b7b7b;
   letter-spacing: 4px;
   font-family: var(--font-display);
@@ -2488,7 +2498,7 @@
 
 .novel-synopsis b {
   color: #8b4a5a;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .novel-synopsis-hint {
@@ -2518,7 +2528,7 @@
 
 .novel-lang-label {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   color: #8b6b6b;
   letter-spacing: 2px;
   padding-bottom: 10px;
@@ -3001,7 +3011,7 @@
 
 .gift-modal-title {
   font-size: clamp(16px, 2.5vw, 20px);
-  font-weight: 600;
+  font-weight: 700;
   color: #555;
   margin: 0 0 6px;
 }

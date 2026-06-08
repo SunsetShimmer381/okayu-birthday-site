@@ -1,155 +1,185 @@
-## 1. 高层摘要（TL;DR）
+## 1. 高层摘要 (TL;DR)
 
-*   **影响范围：** 🟡 **中等** - 优化礼物弹窗的响应式布局和显示效果，新增弹幕祝福内容
+*   **影响范围：** 🟡 **中等** - 重构了整个字体加载系统，从外部 CDN 迁移到本地字体文件，并统一调整了全局字重规范
 *   **核心变更：**
-    *   📱 优化礼物弹窗在图片/视频模式下的自适应布局，改善移动端体验
-    *   🎨 调整视频卡片描述文字颜色，提升可读性
-    *   ✉️ 新增一条来自 "Alice" 的生日弹幕祝福
-    *   📝 更新两个视频卡片的占位符内容为实际视频信息
+    *   🔄 移除外部 CDN 字体引用（Google Fonts + jsdelivr），改用本地字体子集文件
+    *   📦 新增 4 个字体配置文件，支持 300/400/700 三个字重，使用 unicode-range 优化加载
+    *   🎨 统一调整 CSS 字重规范（500→400，600→700），新增 300 字重用于辅助文本
+    *   📅 时间线新增生日事件记录
 
 ---
 
-## 2. 可视化概览（代码与逻辑图）
+## 2. 可视化概览 (代码与逻辑映射)
 
 ```mermaid
 graph TD
-    subgraph "用户交互流程"
-        A[用户点击礼物卡片] --> B{判断卡片类型}
+    subgraph "字体加载架构变更"
+        A["旧方案: 外部CDN"] -->|移除| B["Google Fonts<br/>Klee One"]
+        A -->|移除| C["jsdelivr CDN<br/>lxgw-wenkai-webfont"]
+        
+        D["新方案: 本地字体"] -->|新增| E["lxgw-wenkai-local.css<br/>入口文件"]
+        E --> F["lxgwwenkai-light.css<br/>font-weight: 300"]
+        E --> G["lxgwwenkai-regular.css<br/>font-weight: 400"]
+        E --> H["lxgwwenkai-bold.css<br/>font-weight: 700"]
+        
+        F --> I["多个 subset-*.woff2<br/>unicode-range 优化"]
+        G --> I
+        H --> I
     end
     
-    subgraph "index.html"
-        C[视频卡片1 - 猫羽おかゆの恋のSOS]
-        D[视频卡片2 - 祝猫羽おかゆ生日快乐]
+    subgraph "CSS 样式调整"
+        J["style.css"] --> K["字体栈更新<br/>移除 Klee One"]
+        J --> L["字重规范化"]
+        L --> M["500 → 400<br/>多处调整"]
+        L --> N["600 → 700<br/>标题/强调"]
+        L --> O["新增 300<br/>辅助文本"]
     end
     
-    subgraph "GiftModalController main.js"
-        E[openModal]
-        F[设置 dataset.mode]
-        G[设置 desc.innerHTML]
+    subgraph "HTML 内容"
+        P["index.html"] --> Q["时间线新增<br/>生日事件"]
     end
     
-    subgraph "CSS 样式适配 style.css"
-        H[.gift-modal-overlay data-mode=image]
-        I[.gift-modal-content.video-mode]
-        J[.gift-modal-desc 换行处理]
-    end
-    
-    subgraph "弹幕数据 danmaku-data.js"
-        K[Alice 生日祝福弹幕]
-    end
-    
-    B -->|视频类型| E
-    B -->|图片类型| E
-    E --> F
-    F -->|mode=video| I
-    F -->|mode=image| H
-    E --> G
-    G --> J
-    C -.-> E
-    D -.-> E
-    K -.-> 弹幕显示
+    style A fill:#ffcdd2,color:#b71c1c
+    style D fill:#c8e6c9,color:#1a5e20
+    style J fill:#bbdefb,color:#0d47a1
+    style P fill:#fff3e0,color:#e65100
 ```
 
 ---
 
 ## 3. 详细变更分析
 
-### 🎨 样式优化（`assets/css/style.css`）
+### 📦 组件一：字体系统重构
 
-**变更内容：**
+#### 变更说明
+将字体加载方式从外部 CDN 完全迁移到本地字体文件系统，并采用 unicode-range 子集分割技术优化加载性能。
 
-| 样式选择器 | 原值 | 新值 | 说明 |
-|-----------|------|------|------|
-| `.gift-card-video-glass .gift-card-desc` | `color: #b09090` | `color: #5d4a4a` | 加深描述文字颜色，提升可读性 |
-| `.gift-modal` | `max-width: 90vw` | `width: 90%; max-width: 960px` | 优化弹窗宽度计算逻辑 |
-| `.gift-modal-content img` | `width: 100%` | `max-height: calc(90vh - 80px); width: auto` | 图片改为自适应高度，防止溢出 |
-| `.gift-modal-content.video-mode` | `width: 85vw` | `width: 100%` | 视频模式宽度改为100% |
+#### 新增文件结构
 
-**新增样式：**
+| 文件名 | 用途 | 字重 | 子集数量 |
+|--------|------|------|----------|
+| `assets/fonts/lxgw-wenkai-local.css` | 字体入口文件 | - | 导入3个字重文件 |
+| `assets/fonts/lxgwwenkai-light.css` | 细体字重 | 300 | 40+ 个 subset |
+| `assets/fonts/lxgwwenkai-regular.css` | 常规字重 | 400 | 40+ 个 subset |
+| `assets/fonts/lxgwwenkai-bold.css` | 粗体字重 | 700 | 40+ 个 subset |
+
+#### 字体子集优化示例
+每个字重文件按 Unicode 范围分割成多个 `@font-face` 声明：
 
 ```css
-/* 图片模式 — 弹窗自适应图片大小 */
-.gift-modal-overlay[data-mode="image"] .gift-modal {
-  width: auto;
-  max-width: 90vw;
-}
-
-/* 描述文字换行处理 */
-.gift-modal-desc {
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-/* 个人页面左侧特性卡片 */
-.profile-left-column > .feature-card {
-  flex: 1;
+/* LXGW WenKai [4] - Bold */
+@font-face {
+  font-family: 'LXGW WenKai';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./lxgwwenkai-bold-subset-4.woff2') format('woff2');
+  unicode-range: U+1f1e9-1f1f5, U+1f1f7-1f1ff, ...; /* Emoji 等符号 */
 }
 ```
 
----
-
-### 📝 内容更新（`index.html`）
-
-**视频卡片内容更新：**
-
-| 卡片位置 | 属性 | 原值（占位符） | 新值（实际内容） |
-|---------|------|---------------|-----------------|
-| 卡片1 | `data-title` | 【预留视频】 | 【偶像大师/MMD】猫羽おかゆの恋のSOS |
-| 卡片1 | `data-desc` | 空白の音符 | 空白の音符 |
-| 卡片2 | `data-title` | 【预留标题】 | 祝猫羽おかゆ生日快乐 |
-| 卡片2 | `data-desc` | 预留描述 | Airer-Archer Noahflan 是钢板哦 贰玖...（多人署名） |
+**优势：**
+- ✅ 按需加载：浏览器只下载页面实际使用的字符子集
+- ✅ 减少带宽：相比完整字体文件，大幅降低传输体积
+- ✅ 提升性能：`font-display: swap` 确保文本快速显示
 
 ---
 
-### ⚙️ 逻辑增强（`assets/js/main.js`）
+### 🎨 组件二：CSS 样式规范化
 
-**GiftModalController 类更新：**
+#### 字体栈更新
 
-```javascript
-// 视频模式
-this.overlay.dataset.mode = 'video';  // 新增：设置模式标识
-this.desc.innerHTML = desc || '点击播放视频';  // 改为 innerHTML 支持富文本
+| 属性 | 旧值 | 新值 | 说明 |
+|------|------|------|------|
+| `--font-display` | `'LXGW WenKai', 'Klee One', serif` | `'LXGW WenKai', 'PingFang SC', 'Microsoft YaHei', serif` | 移除 Klee One，添加系统字体兜底 |
 
-// 图片模式  
-this.overlay.dataset.mode = 'image';  // 新增：设置模式标识
+#### 字重规范化调整
+
+**统一调整规则：**
+- **500 → 400**：常规文本、按钮、标签等
+- **600 → 700**：标题、强调文本、数字等
+- **新增 300**：辅助说明、次要文本
+
+**受影响的主要选择器：**
+
+| 选择器 | 旧字重 | 新字重 | 元素类型 |
+|--------|--------|--------|----------|
+| `.nav-item` | - | 400 | 导航项 |
+| `.nav-item.active` | 500 | 700 | 激活导航 |
+| `.birthday-text` | - | 300 | 生日文本 |
+| `.romaji-text` | - | 300 | 罗马音文本 |
+| `.profile-text` | - | 400 | 个人简介 |
+| `.cd-cell .num` | 600 | 700 | 倒计时数字 |
+| `.cd-caption .date` | 600 | 700 | 日期强调 |
+| `.info-label` / `.info-value` | 500 | 400 | 信息标签/值 |
+| `.mini-card-header h4` | 600 | 700 | 小卡片标题 |
+| `.feature-card-header h3` | 600 | 700 | 特性卡片标题 |
+| `.video-title` | 600 | 700 | 视频标题 |
+| `.gift-card-title` | 600 | 700 | 礼物卡片标题 |
+| `.book-divider-title` | 600 | 700 | 书籍分隔标题 |
+| `.gift-modal-title` | 600 | 700 | 礼物弹窗标题 |
+
+---
+
+### 📅 组件三：HTML 内容更新
+
+#### 时间线新增事件
+
+在 `index.html` 的时间线区域新增了一条生日事件记录：
+
+```html
+<div class="timeline-item highlight">
+  <div class="timeline-dot"></div>
+  <div class="timeline-tooltip">
+    <div class="tooltip-arrow"></div>
+    <img class="tooltip-image" src="./assets/images/timeline_9.webp" alt="生日啦！" />
+    <span class="tooltip-caption">点击放大</span>
+  </div>
+  <p class="timeline-date">2026.6.8</p>
+  <p class="timeline-title" data-ja="誕生日だ！" data-cn="生日啦！">誕生日だ！</p>
+  <p class="timeline-desc" data-ja="前日の22時53分（日本時間）、誕生日記念配信の予約が1000人を突破しました！みんなと猫猫が一緒に過ごす初めての誕生日です！" data-cn="在前一天的22:53（日本时间）生日回直播预约突破1000人！这是大家和猫猫过的第一个生日！">...</p>
+</div>
 ```
 
-**变更说明：**
-- 通过 `dataset.mode` 属性让 CSS 能够区分不同模式，应用不同的布局策略
-- 使用 `innerHTML` 替代 `textContent`，允许描述中包含 HTML 标签（如 `<br>` 换行）
-
----
-
-### ✉️ 弹幕数据新增（`assets/js/danmaku-data.js`）
-
-**新增弹幕条目：**
-
-```javascript
-{
-  name: '【Alice】',
-  text: '【猫羽おかゆさん、こんにちは、アリスです。お誕生日おめでとうございます。これからの配信活動が笑顔と楽しさにあふれますように。これからも、私たち猫羽粥の切り抜きグループはずっとあなたのそばで応援し続けます！】',
-  cnText: '【猫羽粥，你好，我是Alice。生日快乐。愿你今后的直播活动充满笑容与快乐。今后，我们猫羽粥的剪辑组也会一直在你身边，继续为你加油！】'
-}
-```
+**事件详情：**
+- 📅 日期：2026.6.8
+- 🎉 事件：生日庆祝
+- 📊 里程碑：生日直播预约突破 1000 人
+- 🖼️ 特色：带有点击放大图片的 tooltip
 
 ---
 
 ## 4. 影响与风险评估
 
-### ✅ 积极影响
-- 📱 **移动端体验提升：** 图片弹窗现在会根据图片尺寸自适应，避免在大屏上过度拉伸
-- 🎯 **内容可读性增强：** 视频卡片描述文字颜色加深，更易于阅读
-- 🎨 **布局灵活性提高：** 通过 `data-mode` 机制，CSS 可以针对不同内容类型应用最优布局
+### ⚠️ 破坏性变更
 
-### ⚠️ 风险点
-| 风险项 | 描述 | 建议 |
-|--------|------|------|
-| **HTML 注入风险** | 使用 `innerHTML` 渲染描述内容 | 确保数据来源可信，或添加 HTML 过滤 |
-| **图片尺寸异常** | `max-height: calc(90vh - 80px)` 可能导致超大图片被压缩 | 测试不同尺寸图片的显示效果 |
+| 变更类型 | 影响范围 | 风险等级 | 说明 |
+|----------|----------|----------|------|
+| 字体文件路径 | 全局 | 🟡 中等 | 需确保所有 `.woff2` 子集文件已正确部署到 `assets/fonts/` 目录 |
+| 字重值调整 | 全局 | 🟢 低 | 视觉上更清晰，但需检查是否有依赖特定字重的布局 |
 
 ### 🧪 测试建议
-1. **弹窗响应式测试：** 在不同屏幕尺寸下测试图片和视频弹窗的显示效果
-2. **内容渲染测试：** 验证描述中包含 `<br>` 等标签时的换行效果
-3. **弹幕显示测试：** 确认新增的 Alice 弹幕能正常显示
 
----
+1.  **字体加载测试**
+    - ✅ 验证页面首次加载时字体是否正确显示（无 FOUT/FoIT）
+    - ✅ 检查网络面板，确认只加载了页面实际使用的字符子集
+    - ✅ 测试不同语言内容（中文、日文、Emoji）的渲染效果
+
+2.  **视觉回归测试**
+    - ✅ 对比调整前后的字重效果，确保标题/正文层次清晰
+    - ✅ 检查导航项、按钮、卡片标题等关键元素的视觉权重
+    - ✅ 验证 300 字重的辅助文本是否清晰可读
+
+3.  **功能测试**
+    - ✅ 测试时间线新增的生日事件交互（tooltip 点击放大）
+    - ✅ 验证中日文切换功能正常
+
+4.  **兼容性测试**
+    - ✅ 测试不同浏览器的 `font-display: swap` 表现
+    - ✅ 验证系统字体回退机制（`PingFang SC`, `Microsoft YaHei`）
+
+### 📌 注意事项
+
+- ⚠️ **字体文件部署**：确保所有 `lxgwwenkai-*-subset-*.woff2` 文件（约 120+ 个）已正确上传到服务器
+- ⚠️ **缓存策略**：字体文件变更后，可能需要清理 CDN 缓存或更新版本号
+- 💡 **性能监控**：建议监控字体加载时间，对比迁移前后的性能指标
