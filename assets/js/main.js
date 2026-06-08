@@ -1184,6 +1184,14 @@ class MusicPlayer {
     this.btn.classList.add('off');
     this.isPlaying = false;
   }
+
+  // 恢复播放：移动端播放视频会抢占音频焦点，浏览器会直接暂停背景 <audio>，
+  // 视频关闭后仅取消静音无法续播，需主动重新 play()。
+  resumeIfPlaying() {
+    if (this.isPlaying && this.audio.paused) {
+      this.audio.play().catch(() => {});
+    }
+  }
 }
 
 // 初始化音乐播放器
@@ -1661,6 +1669,8 @@ class GiftModalController {
     if (this._mutedBgm && musicPlayer && musicPlayer.audio) {
       musicPlayer.audio.muted = false;
       this._mutedBgm = false;
+      // 移动端视频会抢占音频焦点暂停 BGM，关闭后主动续播
+      musicPlayer.resumeIfPlaying();
     }
   }
 }
@@ -1854,6 +1864,8 @@ class VideoModalController {
     }
     document.body.style.overflow = '';
     musicPlayer.audio.muted = false;
+    // 移动端视频会抢占音频焦点暂停 BGM，关闭后主动续播
+    musicPlayer.resumeIfPlaying();
   }
 
   buildEmbedSrc(url) {
