@@ -1649,10 +1649,12 @@ class GiftModalController {
     this.overlay.classList.remove('active');
     document.body.style.overflow = '';
     
-    // 停止视频播放
+    // 停止视频播放：移动端/QQ 内核仅清空 src 无法停止音频，
+    // 直接移除 iframe 节点以彻底销毁播放器。
     const iframe = this.content.querySelector('iframe');
     if (iframe) {
-      iframe.src = '';
+      iframe.removeAttribute('src');
+      iframe.remove();
     }
 
     // 恢复背景音乐（仅当本弹窗曾静音过它）
@@ -1838,8 +1840,18 @@ class VideoModalController {
 
   close() {
     this.overlay.classList.remove('active');
-    // 关键：清空 iframe.src 停止后台播放与发声
-    this.iframe.src = '';
+    // 关键：彻底销毁 iframe 停止后台播放与发声。
+    // 移动端浏览器与 QQ 内置 X5/TBS 内核仅清空 src 无法卸载播放器，
+    // 音频会继续输出，必须把节点从 DOM 移除后再重建一个空 iframe。
+    const parent = this.iframe.parentNode;
+    if (parent) {
+      const fresh = this.iframe.cloneNode(false);
+      fresh.removeAttribute('src');
+      parent.replaceChild(fresh, this.iframe);
+      this.iframe = fresh;
+    } else {
+      this.iframe.src = '';
+    }
     document.body.style.overflow = '';
     musicPlayer.audio.muted = false;
   }
